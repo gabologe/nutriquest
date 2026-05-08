@@ -65,7 +65,6 @@ const FIXED_SLOTS = [
 const WORKOUT_TYPES = ["Fuerza/hipertrofia","Cardio","Funcional/HIIT","Movilidad","Deporte"];
 const todayStr = () => {
   const d = new Date();
-  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
   return d.toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
 };
 
