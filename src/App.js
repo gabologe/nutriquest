@@ -868,63 +868,296 @@ export default function App() {
       )}
 
       {/* METRICS */}
+      {/* METRICS */}
       {tab==="metrics"&&(
         <div>
-          <div style={{...glassCard,padding:20,marginBottom:12}}>
-            <p style={{margin:"0 0 14px",fontSize:13,fontWeight:500,color:G.text}}>Puntaje — 7 días</p>
-            <div style={{display:"flex",alignItems:"flex-end",gap:5,height:72}}>
-              {last7.map(d=>{
-                const h=d.score?Math.round((d.score/10)*64):2;
-                const col=d.score>=8?G.sage:d.score>=5?G.sageMid:"rgba(255,255,255,0.3)";
-                return (
-                  <div key={d.date} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                    <div style={{width:"100%",height:h,background:col,borderRadius:"4px 4px 0 0",opacity:0.85}}/>
-                    <span style={{fontSize:10,color:G.hint}}>{d.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div style={{...glassCard,padding:20,marginBottom:12}}>
-            <p style={{margin:"0 0 14px",fontSize:13,fontWeight:500,color:G.text}}>Proteína (g) — 7 días</p>
-            <div style={{display:"flex",alignItems:"flex-end",gap:5,height:72}}>
-              {last7.map(d=>{
-                const maxP=Math.max(...last7.map(x=>x.prot),1);
-                const h=d.prot?Math.round((d.prot/maxP)*64):2;
-                return (
-                  <div key={d.date} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                    <div style={{width:"100%",height:h,background:G.goldLight,borderTop:`2px solid ${G.gold}`,borderRadius:"4px 4px 0 0",opacity:0.9}}/>
-                    <span style={{fontSize:10,color:G.hint}}>{d.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div style={{...glassCard,padding:"14px 20px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <p style={{margin:0,fontSize:13,color:G.muted}}>Entrenamientos esta semana</p>
-            <span style={{fontSize:24,fontWeight:300,color:G.sage}}>{weekWorkoutCount}<span style={{fontSize:12,color:G.hint}}>/7</span></span>
-          </div>
-          <Btn onClick={fetchWeekSummary} loading={weekSummaryLoading} full>Resumen semanal con IA</Btn>
-          {weekSummary&&(
-            <div style={{...glassCard,padding:20,marginTop:12}}>
-              {[["Mejor día",G.sage,weekSummary.best_day],["Peor día",G.red,weekSummary.worst_day],["Logro",G.text,weekSummary.achievement],["Próximo desafío",G.text,weekSummary.challenge]].map(([k,c,v])=>(
-                <div key={k} style={{marginBottom:12}}>
-                  <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>{k.toUpperCase()}</p>
-                  <p style={{margin:0,fontSize:13,color:c,fontWeight:500}}>{v}</p>
+          {/* Selector de período */}
+          {(() => {
+            const [period, setPeriod] = React.useState("week");
+
+            // ── Datos según período ──
+            const getPeriodData = () => {
+              if (period === "week") {
+                return Array.from({length:7},(_,i)=>{
+                  const d=new Date(); d.setDate(d.getDate()-6+i);
+                  const k=d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
+                  const day=days[k]||{};
+                  const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];
+                  const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:null;
+                  const prot=allM.reduce((a,m)=>a+(m.protein_g||0),0);
+                  const hasActivity=allM.length>0||(day.workout!=null);
+                  return {key:k, label:d.toLocaleDateString("es",{weekday:"short"}), score:score?Math.round(score*10)/10:null, prot:Math.round(prot), hasActivity, workout:day.workout};
+                });
+              }
+              if (period === "month") {
+                return Array.from({length:30},(_,i)=>{
+                  const d=new Date(); d.setDate(d.getDate()-29+i);
+                  const k=d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
+                  const day=days[k]||{};
+                  const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];
+                  const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:null;
+                  const prot=allM.reduce((a,m)=>a+(m.protein_g||0),0);
+                  const hasActivity=allM.length>0||(day.workout!=null);
+                  return {key:k, label:d.getDate().toString(), score:score?Math.round(score*10)/10:null, prot:Math.round(prot), hasActivity, workout:day.workout};
+                });
+              }
+              // year — agrupar por mes
+              return Array.from({length:12},(_,i)=>{
+                const d=new Date(); d.setMonth(d.getMonth()-11+i); d.setDate(1);
+                const year=d.getFullYear(); const month=d.getMonth();
+                const monthDays=Object.entries(days).filter(([k])=>{
+                  const dd=new Date(k+"T12:00:00");
+                  return dd.getFullYear()===year&&dd.getMonth()===month;
+                });
+                const allM=monthDays.flatMap(([,day])=>[...Object.values(day.meals||{}),...(day.snacks||[])]);
+                const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:null;
+                const prot=monthDays.reduce((_,[ ,day])=>{
+                  const m=[...Object.values(day.meals||{}),...(day.snacks||[])];
+                  return _+m.reduce((a,x)=>a+(x.protein_g||0),0);
+                },0)/Math.max(monthDays.length,1);
+                const workouts=monthDays.filter(([,day])=>day.workout).length;
+                const hasActivity=monthDays.length>0;
+                return {key:`${year}-${month}`, label:d.toLocaleDateString("es",{month:"short"}), score:score?Math.round(score*10)/10:null, prot:Math.round(prot), hasActivity, workouts};
+              });
+            };
+
+            const data = getPeriodData();
+            const maxProt = Math.max(...data.map(d=>d.prot), 1);
+            const avgScore = data.filter(d=>d.score).length
+              ? (data.filter(d=>d.score).reduce((a,d)=>a+(d.score||0),0)/data.filter(d=>d.score).length).toFixed(1)
+              : "—";
+            const avgProt = data.length
+              ? Math.round(data.reduce((a,d)=>a+d.prot,0)/data.length)
+              : 0;
+
+            // Workouts para el período
+            const workoutDays = data.filter(d=>d.workout||d.workouts>0);
+            const totalWorkouts = period==="year"
+              ? data.reduce((a,d)=>a+(d.workouts||0),0)
+              : workoutDays.length;
+            const targetPerWeek = 3;
+            const weeksInPeriod = period==="week"?1:period==="month"?4:52;
+            const targetTotal = targetPerWeek * weeksInPeriod;
+            const volumePct = Math.min(100, Math.round((totalWorkouts/targetTotal)*100));
+            const volumeColor = totalWorkouts>=targetTotal ? G.sage : totalWorkouts>=targetTotal*0.7 ? G.gold : G.red;
+
+            // Coherencia promedio
+            const coherenceDays = Object.values(days).filter(d=>d.workout?.coherence_score);
+            const avgCoherence = coherenceDays.length
+              ? (coherenceDays.reduce((a,d)=>a+(d.workout.coherence_score||0),0)/coherenceDays.length).toFixed(1)
+              : null;
+
+            // Racha actual
+            let currentStreak=0; const dd=new Date();
+            while(true){
+              const k=dd.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
+              const day=days[k];
+              const has=day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);
+              if(!has) break;
+              currentStreak++; dd.setDate(dd.getDate()-1);
+            }
+            // Récord de racha
+            const allDates=Object.keys(days).filter(k=>k!=="perfil").sort();
+            let maxStreak=0, tempStreak=0;
+            for(let i=0;i<allDates.length;i++){
+              const day=days[allDates[i]];
+              const has=day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);
+              if(has){tempStreak++;maxStreak=Math.max(maxStreak,tempStreak);}else{tempStreak=0;}
+            }
+
+            // Días activos del mes para calendario
+            const calDays = Array.from({length:30},(_,i)=>{
+              const d=new Date(); d.setDate(d.getDate()-29+i);
+              const k=d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
+              const day=days[k];
+              return day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);
+            });
+
+            const PeriodBtn = ({id,label}) => (
+              <button onClick={()=>setPeriod(id)} style={{
+                padding:"6px 14px",borderRadius:99,border:"none",cursor:"pointer",
+                fontFamily:"inherit",fontSize:11,fontWeight:period===id?600:400,
+                background:period===id?"rgba(90,122,84,0.2)":"transparent",
+                color:period===id?G.sage:G.hint,letterSpacing:"0.03em",
+              }}>{label}</button>
+            );
+
+            return (
+              <div>
+                {/* Selector período */}
+                <div style={{...glassSubtle,display:"flex",justifyContent:"center",gap:4,padding:"4px",borderRadius:99,marginBottom:16}}>
+                  <PeriodBtn id="week" label="Semana"/>
+                  <PeriodBtn id="month" label="Mes"/>
+                  <PeriodBtn id="year" label="Año"/>
                 </div>
-              ))}
-              <div style={{background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:10,padding:"12px 14px",marginTop:4,color:G.sage,fontSize:12,fontStyle:"italic"}}>
-                {weekSummary.motivation}
+
+                {/* Gráfico combinado proteína + puntaje */}
+                <div style={{...glassCard,padding:20,marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+                    <p style={{margin:0,fontSize:13,fontWeight:500,color:G.text}}>Proteína & Puntaje</p>
+                    <div style={{display:"flex",gap:12,fontSize:11,color:G.hint}}>
+                      <span>Prom. score <strong style={{color:G.sage}}>{avgScore}</strong></span>
+                      <span>Prom. prot <strong style={{color:G.gold}}>{avgProt}g</strong></span>
+                    </div>
+                  </div>
+                  <div style={{position:"relative",height:100}}>
+                    {/* Barras doradas = proteína */}
+                    <div style={{display:"flex",alignItems:"flex-end",gap:period==="month"?2:4,height:80,position:"absolute",bottom:20,left:0,right:0}}>
+                      {data.map((d,i)=>{
+                        const h=d.prot?Math.round((d.prot/maxProt)*76):2;
+                        return (
+                          <div key={d.key} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                            <div style={{width:"100%",height:h,background:G.goldLight,borderTop:`2px solid ${G.gold}`,borderRadius:"3px 3px 0 0",opacity:0.9}}/>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Línea verde = puntaje */}
+                    <svg style={{position:"absolute",bottom:20,left:0,right:0,height:80,width:"100%",overflow:"visible"}}>
+                      <polyline
+                        points={data.map((d,i)=>{
+                          const x=(i/(data.length-1||1))*100;
+                          const y=d.score?80-(d.score/10)*76:null;
+                          return y!==null?`${x}%,${y}`:null;
+                        }).filter(Boolean).join(" ")}
+                        fill="none" stroke={G.sage} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" opacity="0.85"
+                      />
+                      {data.map((d,i)=>{
+                        if(!d.score) return null;
+                        const x=(i/(data.length-1||1))*100;
+                        const y=80-(d.score/10)*76;
+                        return <circle key={d.key} cx={`${x}%`} cy={y} r="3" fill={G.sage} opacity="0.9"/>;
+                      })}
+                    </svg>
+                    {/* Etiquetas eje X */}
+                    <div style={{display:"flex",position:"absolute",bottom:0,left:0,right:0}}>
+                      {data.filter((_,i)=>period==="week"||period==="year"||(i%5===0)).map((d,i)=>(
+                        <div key={d.key} style={{flex:1,textAlign:"center"}}>
+                          <span style={{fontSize:9,color:G.hint}}>{d.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Leyenda */}
+                  <div style={{display:"flex",gap:16,marginTop:8,fontSize:11,color:G.hint}}>
+                    <span style={{display:"flex",alignItems:"center",gap:4}}>
+                      <span style={{width:12,height:8,background:G.goldLight,border:`1px solid ${G.gold}`,borderRadius:2,display:"inline-block"}}/>
+                      Proteína (g)
+                    </span>
+                    <span style={{display:"flex",alignItems:"center",gap:4}}>
+                      <span style={{width:12,height:2,background:G.sage,display:"inline-block"}}/>
+                      Puntaje (1-10)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Volumen de entrenamiento */}
+                <div style={{...glassCard,padding:20,marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                    <p style={{margin:0,fontSize:13,fontWeight:500,color:G.text}}>Volumen de entrenamiento</p>
+                    <span style={{fontSize:11,color:G.hint}}>{targetPerWeek}x/sem meta</span>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:16}}>
+                    {/* Círculo de progreso */}
+                    <div style={{position:"relative",width:72,height:72,flexShrink:0}}>
+                      <svg width="72" height="72" style={{transform:"rotate(-90deg)"}}>
+                        <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="6"/>
+                        <circle cx="36" cy="36" r="30" fill="none" stroke={volumeColor} strokeWidth="6"
+                          strokeDasharray={`${2*Math.PI*30}`}
+                          strokeDashoffset={`${2*Math.PI*30*(1-volumePct/100)}`}
+                          strokeLinecap="round" opacity="0.85"
+                        />
+                      </svg>
+                      <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                        <span style={{fontSize:18,fontWeight:600,color:volumeColor,lineHeight:1}}>{totalWorkouts}</span>
+                        <span style={{fontSize:9,color:G.hint}}>/{targetTotal}</span>
+                      </div>
+                    </div>
+                    <div style={{flex:1}}>
+                      <p style={{margin:"0 0 4px",fontSize:13,color:volumeColor,fontWeight:600}}>
+                        {totalWorkouts>=targetTotal?"✓ Meta cumplida":totalWorkouts>=targetTotal*0.7?"Casi llegás":"Por debajo de la meta"}
+                      </p>
+                      <p style={{margin:0,fontSize:11,color:G.hint,lineHeight:1.5}}>
+                        {period==="week"?"Esta semana":period==="month"?"Último mes":"Este año"} · {totalWorkouts} sesión{totalWorkouts!==1?"es":""}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Coherencia nutrición-entreno */}
+                <div style={{...glassCard,padding:20,marginBottom:12}}>
+                  <p style={{margin:"0 0 12px",fontSize:13,fontWeight:500,color:G.text}}>Coherencia nutrición-entreno</p>
+                  {avgCoherence ? (
+                    <div style={{display:"flex",alignItems:"center",gap:16}}>
+                      <div style={{textAlign:"center"}}>
+                        <p style={{margin:0,fontSize:36,fontWeight:300,color:G.sage,lineHeight:1}}>{avgCoherence}</p>
+                        <p style={{margin:"4px 0 0",fontSize:10,color:G.hint}}>promedio</p>
+                      </div>
+                      <div style={{flex:1}}>
+                        <div style={{background:"rgba(255,255,255,0.3)",borderRadius:99,height:6,overflow:"hidden",marginBottom:8}}>
+                          <div style={{width:`${(avgCoherence/10)*100}%`,background:G.sage,height:"100%",borderRadius:99,opacity:0.8}}/>
+                        </div>
+                        <p style={{margin:0,fontSize:11,color:G.hint}}>
+                          {avgCoherence>=8?"Excelente sincronía entre lo que comés y entrenás":avgCoherence>=6?"Buena coherencia, hay margen para mejorar":"Revisá la relación entre tus comidas y entrenamientos"}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p style={{margin:0,fontSize:12,color:G.hint,fontStyle:"italic"}}>Registrá entrenamientos para ver este índice.</p>
+                  )}
+                </div>
+
+                {/* Racha de consistencia */}
+                <div style={{...glassCard,padding:20,marginBottom:12}}>
+                  <p style={{margin:"0 0 12px",fontSize:13,fontWeight:500,color:G.text}}>Racha de consistencia</p>
+                  <div style={{display:"flex",gap:20,marginBottom:16}}>
+                    <div style={{textAlign:"center"}}>
+                      <p style={{margin:0,fontSize:32,fontWeight:300,color:G.sage,lineHeight:1}}>{currentStreak}</p>
+                      <p style={{margin:"4px 0 0",fontSize:10,color:G.hint}}>racha actual</p>
+                    </div>
+                    <div style={{width:"1px",background:"rgba(255,255,255,0.3)"}}/>
+                    <div style={{textAlign:"center"}}>
+                      <p style={{margin:0,fontSize:32,fontWeight:300,color:G.gold,lineHeight:1}}>{maxStreak}</p>
+                      <p style={{margin:"4px 0 0",fontSize:10,color:G.hint}}>récord</p>
+                    </div>
+                  </div>
+                  {/* Calendario 30 días */}
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(10,1fr)",gap:4}}>
+                    {calDays.map((active,i)=>(
+                      <div key={i} style={{
+                        height:16,borderRadius:3,
+                        background:active?"rgba(90,122,84,0.6)":"rgba(255,255,255,0.15)",
+                      }}/>
+                    ))}
+                  </div>
+                  <p style={{margin:"6px 0 0",fontSize:10,color:G.hint}}>Últimos 30 días — verde = día activo</p>
+                </div>
+
+                {/* Resumen semanal IA */}
+                <Btn onClick={fetchWeekSummary} loading={weekSummaryLoading} full>Resumen semanal con IA</Btn>
+                {weekSummary&&(
+                  <div style={{...glassCard,padding:20,marginTop:12}}>
+                    {[["Mejor día",G.sage,weekSummary.best_day],["Peor día",G.red,weekSummary.worst_day],["Logro",G.text,weekSummary.achievement],["Próximo desafío",G.text,weekSummary.challenge]].map(([k,c,v])=>(
+                      <div key={k} style={{marginBottom:12}}>
+                        <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>{k.toUpperCase()}</p>
+                        <p style={{margin:0,fontSize:13,color:c,fontWeight:500}}>{v}</p>
+                      </div>
+                    ))}
+                    <div style={{background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:10,padding:"12px 14px",marginTop:4,color:G.sage,fontSize:12,fontStyle:"italic"}}>
+                      {weekSummary.motivation}
+                    </div>
+                  </div>
+                )}
+                <button onClick={()=>setShowRanking(r=>!r)} style={{
+                  width:"100%",marginTop:10,padding:"9px",borderRadius:10,
+                  border:`1px solid ${G.borderSubtle}`,background:"rgba(255,255,255,0.2)",
+                  color:G.hint,cursor:"pointer",fontSize:12,fontFamily:"inherit",
+                  backdropFilter:blurSm,WebkitBackdropFilter:blurSm,
+                }}>{showRanking?"Ocultar":"Ver"} ranking personal</button>
+                {showRanking&&<WeekRanking days={days}/>}
               </div>
-            </div>
-          )}
-          <button onClick={()=>setShowRanking(r=>!r)} style={{
-            width:"100%",marginTop:10,padding:"9px",borderRadius:10,
-            border:`1px solid ${G.borderSubtle}`,background:"rgba(255,255,255,0.2)",
-            color:G.hint,cursor:"pointer",fontSize:12,fontFamily:"inherit",
-            backdropFilter:blurSm,WebkitBackdropFilter:blurSm,
-          }}>{showRanking?"Ocultar":"Ver"} ranking personal</button>
-          {showRanking&&<WeekRanking days={days}/>}
+            );
+          })()}
         </div>
       )}
 
