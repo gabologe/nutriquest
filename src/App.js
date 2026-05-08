@@ -868,7 +868,6 @@ export default function App() {
       )}
 
       {/* METRICS */}
-      {/* METRICS */}
       {tab==="metrics"&&(
         <div>
           {/* Selector de período */}
