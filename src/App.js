@@ -518,6 +518,7 @@ export default function App() {
   const [weekSummary,setWeekSummary]               = useState(null);
   const [weekSummaryLoading,setWeekSummaryLoading] = useState(false);
   const [showRanking,setShowRanking]               = useState(false);
+  const [metricsPeriod,setMetricsPeriod]           = useState("week");
   const [mealInputs,setMealInputs]                 = useState({});
   const [mealLoading,setMealLoading]               = useState({});
   const [snackName,setSnackName]                   = useState("");
@@ -868,11 +869,12 @@ export default function App() {
       )}
 
       {/* METRICS */}
-      {tab==="metrics"&&(
-        <div>
-          {/* Selector de período */}
-          {(() => {
-            const [period, setPeriod] = React.useState("week");
+            {tab==="metrics"&&(
+              <div>
+                {/* Selector de período */}
+                {(() => {
+                  const period = metricsPeriod;
+                  const setPeriod = setMetricsPeriod;
 
             // ── Datos según período ──
             const getPeriodData = () => {
