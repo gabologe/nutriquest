@@ -1016,16 +1016,16 @@ export default function App() {
                     {/* Línea verde = puntaje */}
                     <svg style={{position:"absolute",bottom:20,left:0,right:0,height:80,width:"100%",overflow:"visible"}}>
                       <polyline
-                        points={data.map((d,i)=>{
-                          const x=(i/(data.length-1||1))*100;
-                          const y=d.score?80-(d.score/10)*76:null;
-                          return y!==null?`${x}%,${y}`:null;
-                        }).filter(Boolean).join(" ")}
-                        fill="none" stroke={G.sage} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" opacity="0.85"
-                      />
+                          points={data.map((d,i)=>{
+                            const x=((i+0.5)/data.length)*100;
+                            const y=d.score!=null?(80-(d.score/10)*76):null;
+                            return y!==null?`${x}%,${y}`:null;
+                          }).filter(Boolean).join(" ")}
+                          fill="none" stroke={G.sage} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" opacity="0.85"
+                        />
                       {data.map((d,i)=>{
                         if(!d.score) return null;
-                        const x=(i/(data.length-1||1))*100;
+                        const x=((i+0.5)/data.length)*100;
                         const y=80-(d.score/10)*76;
                         return <circle key={d.key} cx={`${x}%`} cy={y} r="3" fill={G.sage} opacity="0.9"/>;
                       })}
