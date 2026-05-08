@@ -66,7 +66,7 @@ const WORKOUT_TYPES = ["Fuerza/hipertrofia","Cardio","Funcional/HIIT","Movilidad
 const todayStr = () => {
   const d = new Date();
   const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0,10);
+  return d.toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
 };
 
 // ── Supabase helpers ───────────────────────────────────────────────────────
