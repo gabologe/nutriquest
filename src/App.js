@@ -63,7 +63,11 @@ const FIXED_SLOTS = [
   { id:"dinner",    label:"Cena",     emoji:"🌙" },
 ];
 const WORKOUT_TYPES = ["Fuerza/hipertrofia","Cardio","Funcional/HIIT","Movilidad","Deporte"];
-const todayStr = () => new Date().toISOString().slice(0,10);
+const todayStr = () => {
+  const d = new Date();
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0,10);
+};
 
 // ── Supabase helpers ───────────────────────────────────────────────────────
 async function loadAllDays() {
@@ -89,7 +93,7 @@ async function loadPerfil() {
     .select("perfil")
     .eq("user_id", USER_ID)
     .eq("fecha", "perfil")
-    ..maybeSingle();
+    .single();
   if (error || !data) return null;
   return data.perfil;
 }
@@ -118,9 +122,9 @@ const lsSave = (k,v)   => { try { localStorage.setItem(k,JSON.stringify(v)); } c
 
 // ── AI ─────────────────────────────────────────────────────────────────────
 async function callAI(prompt, system) {
-  const res  = await fetch("/api/analyze", {
+  const res  = await fetch(API_URL, {
     method:"POST", headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ prompt, system }),
+    body:JSON.stringify({ model:MODEL, max_tokens:1000, system, messages:[{role:"user",content:prompt}] }),
   });
   const data = await res.json();
   const text = data.content?.find(b=>b.type==="text")?.text || "";
