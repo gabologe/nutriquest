@@ -89,7 +89,7 @@ async function loadPerfil() {
     .select("perfil")
     .eq("user_id", USER_ID)
     .eq("fecha", "perfil")
-    .single();
+    ..maybeSingle();
   if (error || !data) return null;
   return data.perfil;
 }
