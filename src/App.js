@@ -118,9 +118,9 @@ const lsSave = (k,v)   => { try { localStorage.setItem(k,JSON.stringify(v)); } c
 
 // ── AI ─────────────────────────────────────────────────────────────────────
 async function callAI(prompt, system) {
-  const res  = await fetch(API_URL, {
+  const res  = await fetch("/api/analyze", {
     method:"POST", headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ model:MODEL, max_tokens:1000, system, messages:[{role:"user",content:prompt}] }),
+    body:JSON.stringify({ prompt, system }),
   });
   const data = await res.json();
   const text = data.content?.find(b=>b.type==="text")?.text || "";
