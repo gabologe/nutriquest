@@ -307,55 +307,58 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
       </div>
 
       {/* Gráfico combinado */}
-<div style={{...glassCard,padding:20,marginBottom:12}}>
-  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-    <p style={{margin:0,fontSize:13,fontWeight:500,color:G.text}}>Proteína & Puntaje</p>
-    <div style={{display:"flex",gap:12,fontSize:11,color:G.hint}}>
-      <span>Score <strong style={{color:G.sage}}>{avgScore}</strong></span>
-      <span>Prot <strong style={{color:G.gold}}>{avgProt}g</strong></span>
-    </div>
-  </div>
-  {/* Barras doradas proteína */}
-  <div style={{display:"flex",alignItems:"flex-end",height:60,gap:period==="month"?1:3,marginBottom:12}}>
-    {data.map(d=>{
-      const h=d.prot?Math.round((d.prot/maxProt)*56):2;
-      return <div key={d.key} style={{flex:1,height:h,background:G.goldLight,borderTop:`2px solid ${G.gold}`,borderRadius:"3px 3px 0 0",alignSelf:"flex-end"}}/>;
-    })}
-  </div>
-  {/* Círculos con puntaje */}
-  {/* Línea + círculos con puntaje */}
-<div style={{position:"relative",height:50,marginBottom:8}}>
-  <svg style={{position:"absolute",top:0,left:0,width:"100%",height:"100%"}}>
-    {data.map((d,i)=>{
-      if(i===0||d.score==null||data[i-1].score==null)return null;
-      const x1=((i-0.5)/data.length)*100;
-      const x2=((i+0.5)/data.length)*100;
-      const y1=50-((data[i-1].score||0)/10)*40;
-      const y2=50-(d.score/10)*40;
-      return <line key={i} x1={`${x1}%`} y1={y1} x2={`${x2}%`} y2={y2} stroke={G.sage} strokeWidth="2" opacity="0.7" strokeDasharray="4,3"/>;
-    })}
-  </svg>
-  <div style={{display:"flex",alignItems:"flex-end",height:"100%"}}>
-    {data.map(d=>{
-      const bottom=d.score!=null?`${(d.score/10)*40}px`:"0px";
-      return(
-        <div key={d.key} style={{flex:1,display:"flex",justifyContent:"center",position:"relative"}}>
-          {d.score!=null&&(
-            <div style={{
-              position:"absolute",bottom,
-              width:26,height:26,borderRadius:"50%",
-              background:G.sage,
-              display:"flex",alignItems:"center",justifyContent:"center",
-              fontSize:10,fontWeight:700,color:"#fff",
-              boxShadow:"0 2px 8px rgba(90,122,84,0.4)",
-              transform:"translateY(50%)",
-            }}>{d.score}</div>
-          )}
+      <div style={{...glassCard,padding:20,marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+          <p style={{margin:0,fontSize:13,fontWeight:500,color:G.text}}>Proteína & Puntaje</p>
+          <div style={{display:"flex",gap:12,fontSize:11,color:G.hint}}>
+            <span>Score <strong style={{color:G.sage}}>{avgScore}</strong></span>
+            <span>Prot <strong style={{color:G.gold}}>{avgProt}g</strong></span>
+          </div>
         </div>
-      );
-    })}
-  </div>
-</div>
+        <div style={{position:"relative"}}>
+          {/* Barras doradas proteína */}
+          <div style={{display:"flex",alignItems:"flex-end",height:80,gap:period==="month"?1:3}}>
+            {data.map(d=>{
+              const h=d.prot?Math.round((d.prot/maxProt)*76):2;
+              return <div key={d.key} style={{flex:1,height:h,background:G.goldLight,borderTop:`2px solid ${G.gold}`,borderRadius:"3px 3px 0 0",alignSelf:"flex-end"}}/>;
+            })}
+          </div>
+          {/* Línea verde puntaje — SVG con coordenadas absolutas */}
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            preserveAspectRatio="none"
+            style={{position:"absolute",top:0,left:0,width:"100%",height:80,overflow:"visible"}}
+          >
+            {validLine.length>1&&(
+              <polyline
+                points={validLine.map(p=>`${p.x},${p.y}`).join(" ")}
+                fill="none"
+                stroke={G.sage}
+                strokeWidth="2.5"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                opacity="0.9"
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
+            {validLine.map((p,i)=>(
+              <circle key={i} cx={p.x} cy={p.y} r="3" fill={G.sage} opacity="0.9" vectorEffect="non-scaling-stroke"/>
+            ))}
+          </svg>
+        </div>
+        {/* Etiquetas eje X */}
+        <div style={{display:"flex",marginTop:4}}>
+          {data.map((d,i)=>(
+            (period==="week"||period==="year"||(period==="month"&&i%5===0))
+              ?<div key={d.key} style={{flex:1,textAlign:"center"}}><span style={{fontSize:9,color:G.hint}}>{d.label}</span></div>
+              :<div key={d.key} style={{flex:1}}/>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:16,marginTop:6,fontSize:11,color:G.hint}}>
+          <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:12,height:8,background:G.goldLight,border:`1px solid ${G.gold}`,borderRadius:2,display:"inline-block"}}/>Proteína (g)</span>
+          <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:16,height:2,background:G.sage,display:"inline-block",borderRadius:1}}/>Puntaje</span>
+        </div>
+      </div>
 
       {/* Volumen */}
       <div style={{...glassCard,padding:20,marginBottom:12}}>
