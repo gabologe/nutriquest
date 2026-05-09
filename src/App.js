@@ -102,26 +102,38 @@ function MealDetails({meal}){
 function EditMealModal({meal,onSave,onDelete,onClose}){
   const[desc,setDesc]=useState(meal.desc||"");
   const[date,setDate]=useState(todayStr());
+  const dateLabel=new Date(date+"T12:00:00").toLocaleDateString("es",{day:"numeric",month:"short",year:"numeric",timeZone:"America/Argentina/Buenos_Aires"});
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",backdropFilter:"blur(6px)",WebkitBackdropFilter:"blur(6px)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-      <div style={{...glassCard,padding:24,width:"100%",maxWidth:400}}>
-        <p style={{margin:"0 0 16px",fontSize:14,fontWeight:600,color:G.text}}>Editar comida</p>
-        <label style={lbl}>Descripción</label>
-        <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3} style={{...inp,resize:"vertical"}}/>
-        <label style={lbl}>Mover a fecha</label>
-        <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={inp}/>
-        <div style={{display:"flex",gap:8,marginTop:8}}>
-          <Btn onClick={()=>onSave(desc,date)} full>Guardar</Btn>
-          <Btn onClick={onClose}>Cancelar</Btn>
+    <div style={{position:"fixed",inset:0,background:"rgba(40,60,40,0.25)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"rgba(255,255,255,0.88)",border:"1px solid rgba(255,255,255,0.75)",borderRadius:18,padding:24,width:"100%",maxWidth:360}}>
+        {/* Header */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+          <p style={{margin:0,fontSize:17,fontWeight:500,color:"#2e4a2b"}}>Editar comida</p>
+          <div style={{position:"relative",display:"inline-flex",alignItems:"center",gap:5}}>
+            <span style={{fontSize:12,color:"#93a48f"}}>{dateLabel}</span>
+            <span style={{fontSize:15,color:"#93a48f"}}>✏️</span>
+            <input type="date" value={date} onChange={e=>setDate(e.target.value)}
+              style={{position:"absolute",inset:0,opacity:0,cursor:"pointer",width:"100%",height:"100%",border:"none",background:"none",fontSize:0}}/>
+          </div>
         </div>
-        <button onClick={()=>{if(window.confirm("¿Eliminar esta comida?"))onDelete();}} style={{width:"100%",marginTop:12,padding:"10px",borderRadius:10,border:"1px solid rgba(180,80,80,0.3)",background:"rgba(180,80,80,0.08)",color:G.red,cursor:"pointer",fontSize:13,fontFamily:"inherit",fontWeight:500}}>
-          🗑️ Eliminar
+        {/* Campo descripción */}
+        <label style={{display:"block",fontSize:11,color:"#93a48f",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:5}}>Descripción</label>
+        <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3}
+          style={{width:"100%",background:"rgba(255,255,255,0.65)",border:"1px solid rgba(200,200,200,0.4)",borderRadius:10,color:"#2a3428",padding:"10px 13px",fontSize:14,boxSizing:"border-box",fontFamily:"inherit",resize:"vertical",outline:"none",minHeight:72}}/>
+        {/* Botones */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:20}}>
+          <button onClick={onClose} style={{padding:11,borderRadius:10,border:"1px solid rgba(180,180,180,0.35)",background:"transparent",color:"#93a48f",fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+          <button onClick={()=>onSave(desc,date)} style={{padding:11,borderRadius:10,border:"none",background:"#5a7a54",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Guardar</button>
+        </div>
+        {/* Eliminar */}
+        <button onClick={()=>{if(window.confirm("¿Eliminar esta comida?"))onDelete();}}
+          style={{display:"block",width:"100%",marginTop:18,textAlign:"center",fontSize:12,color:"#8a4040",textDecoration:"underline",textUnderlineOffset:3,background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:"inherit"}}>
+          Eliminar esta comida
         </button>
       </div>
     </div>
   );
-}
-function MealCard({meal,onMoveDate,onDelete,onSave}){
+}function MealCard({meal,onMoveDate,onDelete,onSave}){
   const[exp,setExp]=useState(false);
   const[editing,setEditing]=useState(false);
   const skinC={beneficioso:G.sage,neutro:G.muted,inflamatorio:G.red};
