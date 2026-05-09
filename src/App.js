@@ -75,7 +75,16 @@ const inp={width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm
 const lbl={display:"block",fontSize:11,color:G.hint,marginBottom:4,marginTop:10,letterSpacing:"0.05em",textTransform:"uppercase"};
 
 function Btn({onClick,loading,children,full,disabled}){
-  return <button onClick={onClick} disabled={loading||disabled} style={{padding:"10px 18px",borderRadius:10,border:`1px solid ${loading||disabled?G.borderSubtle:G.sageBorder}`,cursor:"pointer",background:loading||disabled?"rgba(255,255,255,0.3)":"rgba(90,122,84,0.15)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,color:loading||disabled?G.hint:G.sage,fontWeight:600,fontSize:13,width:full?"100%":"auto",fontFamily:"inherit",letterSpacing:"0.02em",transition:"all 0.2s"}}>{loading?"…":children}</button>;
+  return <button onClick={onClick} disabled={loading||disabled} style={{
+    padding:"10px 18px",borderRadius:10,
+    border:"1px solid rgba(60,100,56,0.45)",
+    background:loading||disabled?"rgba(255,255,255,0.3)":"rgba(90,122,84,0.28)",
+    backdropFilter:"blur(10px)",WebkitBackdropFilter:"blur(10px)",
+    color:loading||disabled?G.hint:"#1e3a1a",
+    fontWeight:600,fontSize:13,width:full?"100%":"auto",
+    fontFamily:"inherit",letterSpacing:"0.02em",transition:"all 0.2s",
+    cursor:loading||disabled?"not-allowed":"pointer",
+  }}>{loading?"…":children}</button>;
 }
 function Tag({color,bg,border,children}){
   return <span style={{fontSize:11,background:bg||G.sageLight,color:color||G.sage,border:`1px solid ${border||G.sageBorder}`,padding:"3px 9px",borderRadius:99,fontWeight:500,letterSpacing:"0.02em"}}>{children}</span>;
