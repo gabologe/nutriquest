@@ -260,12 +260,11 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
   );
 
   // Puntos de línea para el gráfico
-      const svgW=data.length*28;
-      const linePoints=data.map((d,i)=>{
-        const x=(i+0.5)*28;
-        const y=d.score!=null?76-(d.score/10)*72:null;
-        return y!=null?{x,y}:null;
-      }).filter(Boolean);
+  const linePoints=data.map((d,i)=>{
+    const x=((i+0.5)/data.length)*100;
+    const y=d.score!=null?80-(d.score/10)*76:null;
+    return y!=null?{x,y,score:d.score}:null;
+  }).filter(Boolean);
 
   return (
     <div>
@@ -294,18 +293,12 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
             })}
           </div>
           {/* Línea verde puntaje */}
-          <svg viewBox={`0 0 ${svgW} 80`} preserveAspectRatio="none" style={{position:"absolute",bottom:20,left:0,width:"100%",height:80}}>
+          <svg style={{position:"absolute",bottom:20,left:0,width:"100%",height:80,overflow:"visible"}}>
             {linePoints.length>1&&(
               <polyline
-                points={linePoints.map(p=>`${p.x},${p.y}`).join(" ")}
-                fill="none" stroke={G.sage} strokeWidth="2.5"
-                strokeLinejoin="round" strokeLinecap="round" opacity="0.9"
+                points={linePoints.map(p=>`${p.x}%,${p.y}`).join(" ")}
+                fill="none" stroke={G.sage} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" opacity="0.9"
               />
-            )}
-            {linePoints.map((p,i)=>(
-              <circle key={i} cx={p.x} cy={p.y} r="3.5" fill={G.sage} opacity="0.9"/>
-            ))}
-          </svg>
             )}
             {linePoints.map((p,i)=>(
               <circle key={i} cx={`${p.x}%`} cy={p.y} r="3.5" fill={G.sage} opacity="0.9"/>
