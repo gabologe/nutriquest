@@ -593,14 +593,15 @@ export default function App(){
   const TABS=[{id:"today",label:"Hoy"},{id:"workout",label:"Entreno"},{id:"history",label:"Historial"},{id:"metrics",label:"Métricas"},{id:"badges",label:"Badges"}];
 
   return(
-    <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1} 0%,${G.bg2} 50%,${G.bg3} 100%)`,color:G.text,padding:20,maxWidth:600,margin:"0 auto"}}>
+    <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1} 0%,${G.bg2} 50%,${G.bg3} 100%)`,color:G.text,padding:"20px clamp(20px, 5vw, 60px)", maxWidth:900, margin:"0 auto"}}>
       <Confetti active={confetti}/>
       <Toast toasts={toasts}/>
       <div style={{textAlign:"center",marginBottom:20}}>
         <h1 style={{margin:"0 0 2px",fontSize:18,fontWeight:300,color:G.text,letterSpacing:"0.02em"}}>🌿 NutriQuest</h1>
         <p style={{margin:0,fontSize:11,color:G.hint,letterSpacing:"0.06em"}}>{new Date().toLocaleDateString("es",{weekday:"long",day:"numeric",month:"long",timeZone:"America/Argentina/Buenos_Aires"})}</p>
       </div>
-      <ProfilePanel profile={profile} onUpdate={setProfile}/>
+    <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr)",gap:20}}>  
+    <ProfilePanel profile={profile} onUpdate={setProfile}/>
       <XPBar xp={xp} streak={streak}/>
       <div style={{...glassCard,padding:"12px 18px",marginBottom:16}}>
         <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:8}}>
@@ -611,9 +612,10 @@ export default function App(){
           <div style={{width:`${Math.min(100,(todayProt/proteinGoal)*100)}%`,background:G.sage,height:"100%",borderRadius:99,transition:"width 0.6s ease",opacity:0.75}}/>
         </div>
       </div>
-      <div style={{...glassSubtle,display:"flex",gap:0,marginBottom:20,overflow:"hidden",padding:4,borderRadius:14}}>
+      <div style={{...glassSubtle,display:"flex",gap:0,marginBottom:20,overflow:"hidden",padding:4,borderRadius:14,maxWidth:480}}>
         {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,padding:"8px 6px",background:tab===t.id?"rgba(255,255,255,0.6)":"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:tab===t.id?600:400,color:tab===t.id?G.sage:G.hint,borderRadius:10,transition:"all 0.2s",backdropFilter:tab===t.id?blurSm:"none",WebkitBackdropFilter:tab===t.id?blurSm:"none"}}>{t.label}</button>)}
       </div>
+    </div>
 
       {tab==="today"&&(
         <div>
