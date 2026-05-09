@@ -99,7 +99,7 @@ function MealDetails({meal}){
   const hyC={excelente:G.sage,bueno:G.sageMid,moderado:G.gold,bajo:G.red};
   return <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(255,255,255,0.4)",fontSize:13}}><div style={{marginBottom:8}}><span style={{color:G.hint,fontSize:12}}>Hipertrofia — </span><span style={{color:hyC[meal.hypertrophy]||G.muted,fontWeight:600}}>{meal.hypertrophy}</span></div>{(meal.nutrients||[]).map((n,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:5}}><span style={{color:G.sage,fontWeight:600,minWidth:80,fontSize:12}}>{n.name}</span><span style={{color:G.muted,fontSize:12,lineHeight:1.4}}>{n.benefit}</span></div>)}{meal.tip&&<div style={{marginTop:10,background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:8,padding:"10px 12px",color:G.sage,fontSize:12,fontStyle:"italic"}}>💡 {meal.tip}</div>}</div>;
 }
-function MealCard({meal,onMoveDate}){
+function MealCard({meal,onMoveDate,onDelete}){
   const[exp,setExp]=useState(false);
   const[moving,setMoving]=useState(false);
   const[newDate,setNewDate]=useState("");
@@ -125,9 +125,14 @@ function MealCard({meal,onMoveDate}){
           {onMoveDate&&(
             <div style={{marginTop:10}}>
               {!moving?(
-                <button onClick={()=>setMoving(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"4px 10px",fontSize:11,color:G.hint,cursor:"pointer",fontFamily:"inherit"}}>
-                  📅 Mover a otro día
-                </button>
+                <div style={{display:"flex",gap:8,marginTop:10}}>
+                  <button onClick={()=>setMoving(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"4px 10px",fontSize:11,color:G.hint,cursor:"pointer",fontFamily:"inherit"}}>
+                    📅 Mover fecha
+                  </button>
+                  <button onClick={()=>onDelete&&onDelete()} style={{background:"none",border:`1px solid rgba(180,80,80,0.25)`,borderRadius:8,padding:"4px 10px",fontSize:11,color:G.red,cursor:"pointer",fontFamily:"inherit"}}>
+                    🗑️ Eliminar
+                  </button>
+                </div>
               ):(
                 <div style={{display:"flex",gap:8,alignItems:"center",marginTop:6}}>
                   <input type="date" value={newDate} onChange={e=>setNewDate(e.target.value)}
@@ -143,7 +148,9 @@ function MealCard({meal,onMoveDate}){
     </div>
   );
 }
-function MealSlot({slot,meal,input,onInput,loading,onSubmit,onMoveDate}){
+function MealSlot({slot,meal,input,onInput,loading,onSubmit,onMoveDate,onDelete}){
+  return <div style={{padding:"15px 18px"}}><div style={{fontWeight:500,fontSize:13,color:G.text,marginBottom:10,display:"flex",alignItems:"center",gap:7}}><span style={{fontSize:16}}>{slot.emoji}</span><span style={{letterSpacing:"0.01em",color:G.muted}}>{slot.label}</span></div>{meal?<MealCard meal={meal} onMoveDate={onMoveDate} onDelete={onDelete}/>:<div style={{display:"flex",gap:8}}><input value={input} onChange={e=>onInput(e.target.value)} placeholder="¿Qué comiste?" style={{...inp,flex:1,marginBottom:0}} onKeyDown={e=>e.key==="Enter"&&onSubmit()}/><Btn loading={loading} onClick={onSubmit}>Analizar</Btn></div>}</div>;
+}
   return <div style={{padding:"15px 18px"}}><div style={{fontWeight:500,fontSize:13,color:G.text,marginBottom:10,display:"flex",alignItems:"center",gap:7}}><span style={{fontSize:16}}>{slot.emoji}</span><span style={{letterSpacing:"0.01em",color:G.muted}}>{slot.label}</span></div>{meal?<MealCard meal={meal} onMoveDate={onMoveDate}/>:<div style={{display:"flex",gap:8}}><input value={input} onChange={e=>onInput(e.target.value)} placeholder="¿Qué comiste?" style={{...inp,flex:1,marginBottom:0}} onKeyDown={e=>e.key==="Enter"&&onSubmit()}/><Btn loading={loading} onClick={onSubmit}>Analizar</Btn></div>}</div>;
 }
 function WorkoutCard({workout,compact}){
@@ -474,6 +481,18 @@ export default function App(){
 
   useEffect(()=>{if(streak>=3)unlockBadge("streak_3");if(streak>=7){unlockBadge("streak_7");unlockBadge("week_complete");}},[streak,unlockBadge]);
   const handleMoveDate=async(slotId,targetDate,isMeal=true,snackIndex=null)=>{
+  const handleDeleteMeal=async(slotId)=>{
+  const fromDay=days[today]||{meals:{},snacks:[],workout:null};
+  const newMeals={...fromDay.meals};
+  delete newMeals[slotId];
+  await updateToday({meals:newMeals});
+};
+
+const handleDeleteSnack=async(index)=>{
+  const fromDay=days[today]||{meals:{},snacks:[],workout:null};
+  const newSnacks=(fromDay.snacks||[]).filter((_,i)=>i!==index);
+  await updateToday({snacks:newSnacks});
+};
   const fromDay=days[today]||{meals:{},snacks:[],workout:null};
   const toDay=days[targetDate]||{meals:{},snacks:[],workout:null};
   if(isMeal){
@@ -589,7 +608,7 @@ export default function App(){
           <div style={{...glassCard,overflow:"hidden",marginBottom:16}}>
             {FIXED_SLOTS.map((slot,i)=>(
               <div key={slot.id}>
-                <MealSlot slot={slot} meal={todayData.meals?.[slot.id]} input={mealInputs[slot.id]||""} onInput={v=>setMealInputs(x=>({...x,[slot.id]:v}))} loading={mealLoading[slot.id]} onSubmit={()=>handleMealSubmit(slot.id,slot.label)} onMoveDate={(date)=>handleMoveDate(slot.id,date,true)}/>
+                <MealSlot slot={slot} meal={todayData.meals?.[slot.id]} input={mealInputs[slot.id]||""} onInput={v=>setMealInputs(x=>({...x,[slot.id]:v}))} loading={mealLoading[slot.id]} onSubmit={()=>handleMealSubmit(slot.id,slot.label)} onMoveDate={(date)=>handleMoveDate(slot.id,date,true)} onDelete={()=>handleDeleteMeal(slot.id)}/>
                 {i<FIXED_SLOTS.length-1&&<Divider/>}
               </div>
             ))}
@@ -599,7 +618,7 @@ export default function App(){
             {(todayData.snacks||[]).map((s,i)=>(
               <div key={i} style={{marginBottom:12,paddingBottom:12,borderBottom:"1px solid rgba(255,255,255,0.4)"}}>
                 <p style={{margin:"0 0 6px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>{s.name.toUpperCase()}</p>
-                <MealCard meal={s} onMoveDate={(date)=>handleMoveDate(null,date,false,i)}/>
+                <MealCard meal={s} onMoveDate={(date)=>handleMoveDate(null,date,false,i)} onDelete={()=>handleDeleteSnack(i)}/>
               </div>
             ))}
             <div style={{display:"flex",gap:8,marginBottom:8}}>
