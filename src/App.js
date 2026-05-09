@@ -71,8 +71,8 @@ async function callAI(prompt,system){
 
 const glassCard={background:G.glass,backdropFilter:blur,WebkitBackdropFilter:blur,border:`1px solid ${G.border}`,borderRadius:18};
 const glassSubtle={background:G.glassDark,backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.borderSubtle}`,borderRadius:12};
-const inp={width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"10px 13px",fontSize:14,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
-const lbl={display:"block",fontSize:11,color:G.hint,marginBottom:4,marginTop:10,letterSpacing:"0.05em",textTransform:"uppercase"};
+const inp={width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"10px 13px",fontSize:15,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
+const lbl={display:"block",fontSize:12,color:G.hint,marginBottom:4,marginTop:10,letterSpacing:"0.05em",textTransform:"uppercase"};
 
 function Btn({onClick,loading,children,full,disabled}){
   return <button onClick={onClick} disabled={loading||disabled} style={{
@@ -86,7 +86,7 @@ function Btn({onClick,loading,children,full,disabled}){
   }}>{loading?"…":children}</button>;
 }
 function Tag({color,bg,border,children}){
-  return <span style={{fontSize:11,background:bg||G.sageLight,color:color||G.sage,border:`1px solid ${border||G.sageBorder}`,padding:"3px 9px",borderRadius:99,fontWeight:500,letterSpacing:"0.02em"}}>{children}</span>;
+  return <span style={{fontSize:12,background:bg||G.sageLight,color:color||G.sage,border:`1px solid ${border||G.sageBorder}`,padding:"3px 9px",borderRadius:99,fontWeight:500,letterSpacing:"0.02em"}}>{children}</span>;
 }
 function Divider(){return <div style={{height:"1px",background:"rgba(255,255,255,0.4)",margin:"0 18px"}}/>;}
 function Confetti({active}){
