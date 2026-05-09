@@ -277,58 +277,36 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
         </div>
 
         {/* Barras proteína */}
-        <div style={{display:"flex",alignItems:"flex-end",height:60,gap}}>
-          {data.map(d=>{
-            const h=d.prot?Math.round((d.prot/maxProt)*56):2;
-            return <div key={d.key} style={{flex:1,height:h,background:G.goldLight,borderTop:`2px solid ${G.gold}`,borderRadius:"3px 3px 0 0",alignSelf:"flex-end"}}/>;
-          })}
-        </div>
+        {/* Barras proteína */}
+<div style={{display:"flex",alignItems:"flex-end",height:60,gap}}>
+  {data.map(d=>{
+    const h=d.prot?Math.round((d.prot/maxProt)*56):2;
+    return <div key={d.key} style={{flex:1,height:h,background:G.goldLight,borderTop:`2px solid ${G.gold}`,borderRadius:"3px 3px 0 0",alignSelf:"flex-end"}}/>;
+  })}
+</div>
 
-        {/* Etiquetas días */}
-        <div style={{display:"flex",gap,marginTop:4,marginBottom:16}}>
-          {data.map((d,i)=>(
-            (period==="week"||period==="year"||(period==="month"&&i%5===0))
-              ? <div key={d.key} style={{flex:1,textAlign:"center"}}><span style={{fontSize:9,color:G.hint}}>{d.label}</span></div>
-              : <div key={d.key} style={{flex:1}}/>
-          ))}
-        </div>
+{/* Etiquetas días */}
+<div style={{display:"flex",gap,marginTop:4}}>
+  {data.map((d,i)=>(
+    (period==="week"||period==="year"||(period==="month"&&i%5===0))
+      ? <div key={d.key} style={{flex:1,textAlign:"center"}}><span style={{fontSize:9,color:G.hint}}>{d.label}</span></div>
+      : <div key={d.key} style={{flex:1}}/>
+  ))}
+</div>
 
-        {/* Línea de puntaje con círculos */}
-        <div style={{position:"relative",height:70}}>
-          {/* Líneas de conexión */}
-          <svg style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",overflow:"visible"}}>
-            {data.map((d,i)=>{
-              if(i===0||d.score==null||data[i-1].score==null)return null;
-              const total=data.length;
-              const x1=`${((i-1+0.5)/total)*100}%`;
-              const x2=`${((i+0.5)/total)*100}%`;
-              const y1=70-((data[i-1].score/10)*56);
-              const y2=70-((d.score/10)*56);
-              return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={G.sage} strokeWidth="2" opacity="0.7"/>;
-            })}
-          </svg>
-          {/* Círculos con puntaje */}
-          <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",display:"flex"}}>
-            {data.map(d=>{
-              if(d.score==null)return <div key={d.key} style={{flex:1}}/>;
-              const top=70-((d.score/10)*56)-12;
-              return(
-                <div key={d.key} style={{flex:1,position:"relative",display:"flex",justifyContent:"center"}}>
-                  <div style={{
-                    position:"absolute",
-                    top:Math.max(0,top),
-                    width:24,height:24,borderRadius:"50%",
-                    background:G.sage,
-                    display:"flex",alignItems:"center",justifyContent:"center",
-                    fontSize:9,fontWeight:700,color:"#fff",
-                    boxShadow:"0 2px 6px rgba(90,122,84,0.35)",
-                  }}>{d.score}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+{/* Divisor */}
+<div style={{height:"1px",background:"rgba(255,255,255,0.35)",margin:"6px 0"}}/>
 
+{/* Puntajes */}
+<div style={{display:"flex",gap,marginBottom:8}}>
+  {data.map(d=>(
+    <div key={d.key} style={{flex:1,textAlign:"center"}}>
+      <span style={{fontSize:11,fontWeight:700,color:G.sage}}>
+        {d.score!=null?d.score:"·"}
+      </span>
+    </div>
+  ))}
+</div>
         {/* Leyenda */}
         <div style={{display:"flex",gap:16,marginTop:8,fontSize:11,color:G.hint}}>
           <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:12,height:8,background:G.goldLight,border:`1px solid ${G.gold}`,borderRadius:2,display:"inline-block"}}/>Proteína (g)</span>
