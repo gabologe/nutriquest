@@ -77,10 +77,9 @@ const lbl={display:"block",fontSize:11,color:G.hint,marginBottom:4,marginTop:10,
 function Btn({onClick,loading,children,full,disabled}){
   return <button onClick={onClick} disabled={loading||disabled} style={{
     padding:"10px 18px",borderRadius:10,
-    border:"1px solid rgba(60,100,56,0.45)",
-    background:loading||disabled?"rgba(255,255,255,0.3)":"rgba(90,122,84,0.28)",
-    backdropFilter:"blur(10px)",WebkitBackdropFilter:"blur(10px)",
-    color:loading||disabled?G.hint:"#1e3a1a",
+    border:"none",
+    background:loading||disabled?"rgba(180,180,180,0.3)":"#5a7a54",
+    color:loading||disabled?G.hint:"#fff",
     fontWeight:600,fontSize:13,width:full?"100%":"auto",
     fontFamily:"inherit",letterSpacing:"0.02em",transition:"all 0.2s",
     cursor:loading||disabled?"not-allowed":"pointer",
