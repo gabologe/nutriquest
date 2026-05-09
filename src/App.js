@@ -16,7 +16,7 @@ const G = {
   gold:"#8a6c2a",goldLight:"rgba(180,148,72,0.15)",red:"#8a4040",redLight:"rgba(180,80,80,0.12)",
   bg1:"#c8d8c4",bg2:"#e8e0d0",bg3:"#d4cabb",
 };
-const blur="blur(14px)", blurSm="blur(8px)";
+const blur="blur(14px)",blurSm="blur(8px)";
 
 const LEVELS=[
   {name:"Novato",emoji:"🌱",xp:0},{name:"Aprendiz",emoji:"🌿",xp:200},
@@ -38,25 +38,21 @@ const FIXED_SLOTS=[
 ];
 const WORKOUT_TYPES=["Fuerza/hipertrofia","Cardio","Funcional/HIIT","Movilidad","Deporte"];
 
-const todayStr=()=>{
-  const d=new Date();
-  return d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
-};
+const todayStr=()=>new Date().toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
 
-// ── Supabase helpers ───────────────────────────────────────────────────────
 async function loadAllDays(){
   const{data,error}=await supabase.from("registros").select("*").eq("user_id",USER_ID);
   if(error){console.error(error);return{};}
   const map={};
   data.forEach(row=>{
-    if(row.fecha==="perfil") return;
+    if(row.fecha==="perfil")return;
     map[row.fecha]={meals:row.meals||{},snacks:row.snacks||[],workout:row.workout||null};
   });
   return map;
 }
 async function loadPerfil(){
   const{data,error}=await supabase.from("registros").select("perfil").eq("user_id",USER_ID).eq("fecha","perfil").maybeSingle();
-  if(error||!data) return null;
+  if(error||!data)return null;
   return data.perfil;
 }
 async function savePerfil(perfil){
@@ -82,7 +78,6 @@ async function callAI(prompt,system){
   return JSON.parse(text.replace(/```json|```/g,"").trim());
 }
 
-// ── Shared styles ──────────────────────────────────────────────────────────
 const glassCard={background:G.glass,backdropFilter:blur,WebkitBackdropFilter:blur,border:`1px solid ${G.border}`,borderRadius:18};
 const glassSubtle={background:G.glassDark,backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.borderSubtle}`,borderRadius:12};
 const inp={width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"10px 13px",fontSize:14,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
@@ -97,7 +92,7 @@ function Tag({color,bg,border,children}){
 function Divider(){return <div style={{height:"1px",background:"rgba(255,255,255,0.4)",margin:"0 18px"}}/>;}
 
 function Confetti({active}){
-  if(!active) return null;
+  if(!active)return null;
   const pieces=Array.from({length:22},(_,i)=>({id:i,left:Math.random()*100,color:[G.sage,G.sageMid,G.gold,"#c8b89a","#8fad8b"][i%5],delay:Math.random()*0.4,size:5+Math.random()*6}));
   return <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:9999}}>{pieces.map(p=><div key={p.id} style={{position:"absolute",left:`${p.left}%`,top:"-10px",width:p.size,height:p.size,borderRadius:"50%",background:p.color,animation:`fall 1.6s ${p.delay}s ease-in forwards`}}/>)}<style>{`@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:0;}}`}</style></div>;
 }
@@ -135,8 +130,7 @@ function WeekRanking({days}){
     const wk=mon.toISOString().slice(0,10);
     if(!weeks[wk])weeks[wk]=[];
     const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];
-    const avg=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:0;
-    weeks[wk].push(avg);
+    weeks[wk].push(allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:0);
   });
   const ranked=Object.entries(weeks).map(([wk,arr])=>({wk,score:(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1),days:arr.length})).sort((a,b)=>b.score-a.score);
   return <div style={{...glassSubtle,padding:16,marginTop:10,borderRadius:14}}><p style={{margin:"0 0 10px",fontSize:13,fontWeight:600,color:G.text}}>Mejores semanas</p>{ranked.slice(0,5).map((r,i)=><div key={r.wk} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"7px 0",borderBottom:"1px solid rgba(255,255,255,0.3)"}}><span style={{color:G.muted}}>{["🥇","🥈","🥉","4","5"][i]} {r.wk}</span><span style={{color:G.sage,fontWeight:600}}>⭐ {r.score} · {r.days}d</span></div>)}</div>;
@@ -151,8 +145,31 @@ function ProfilePanel({profile,onUpdate}){
     const updated={name:form.name,weight:+form.weight,height:+form.height};
     await savePerfil(updated);onUpdate(updated);setEditing(false);
   };
-  if(editing)return <div style={{...glassCard,padding:"16px 18px",marginBottom:16}}><p style={{margin:"0 0 12px",fontSize:13,fontWeight:600,color:G.text}}>Editar perfil</p><label style={lbl}>Nombre</label><input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} style={inp}/><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}><div><label style={lbl}>Peso (kg)</label><input type="number" value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} style={inp}/></div><div><label style={lbl}>Altura (cm)</label><input type="number" value={form.height} onChange={e=>setForm(f=>({...f,height:e.target.value}))} style={inp}/></div></div>{form.weight&&form.height&&<div style={{background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:8,padding:"8px 12px",fontSize:12,color:G.sage,marginBottom:10}}>Meta proteína: <strong>{Math.round(+form.weight*2)}g/día</strong> · IMC: {(+form.weight/((+form.height/100)**2)).toFixed(1)}</div>}<div style={{display:"flex",gap:8}}><Btn onClick={handleSave} full>Guardar</Btn><Btn onClick={()=>setEditing(false)}>Cancelar</Btn></div></div>;
-  return <div style={{...glassCard,padding:"14px 18px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{display:"flex",gap:14,alignItems:"center"}}><div style={{width:36,height:36,borderRadius:"50%",background:G.sageLight,border:`1px solid ${G.sageBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15}}>🌿</div><div><p style={{margin:0,fontSize:13,fontWeight:600,color:G.text}}>{profile.name}</p><p style={{margin:"2px 0 0",fontSize:11,color:G.hint}}>{profile.weight}kg · {profile.height}cm · IMC {bmi}</p></div></div><div style={{textAlign:"right"}}><p style={{margin:0,fontSize:18,fontWeight:600,color:G.sage}}>{protGoal}<span style={{fontSize:11,color:G.hint,fontWeight:400}}> g prot</span></p><button onClick={()=>setEditing(true)} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:G.hint,padding:0,fontFamily:"inherit",marginTop:2}}>editar</button></div></div>;
+  if(editing)return(
+    <div style={{...glassCard,padding:"16px 18px",marginBottom:16}}>
+      <p style={{margin:"0 0 12px",fontSize:13,fontWeight:600,color:G.text}}>Editar perfil</p>
+      <label style={lbl}>Nombre</label>
+      <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} style={inp}/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div><label style={lbl}>Peso (kg)</label><input type="number" value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} style={inp}/></div>
+        <div><label style={lbl}>Altura (cm)</label><input type="number" value={form.height} onChange={e=>setForm(f=>({...f,height:e.target.value}))} style={inp}/></div>
+      </div>
+      {form.weight&&form.height&&<div style={{background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:8,padding:"8px 12px",fontSize:12,color:G.sage,marginBottom:10}}>Meta proteína: <strong>{Math.round(+form.weight*2)}g/día</strong> · IMC: {(+form.weight/((+form.height/100)**2)).toFixed(1)}</div>}
+      <div style={{display:"flex",gap:8}}><Btn onClick={handleSave} full>Guardar</Btn><Btn onClick={()=>setEditing(false)}>Cancelar</Btn></div>
+    </div>
+  );
+  return(
+    <div style={{...glassCard,padding:"14px 18px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div style={{display:"flex",gap:14,alignItems:"center"}}>
+        <div style={{width:36,height:36,borderRadius:"50%",background:G.sageLight,border:`1px solid ${G.sageBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15}}>🌿</div>
+        <div><p style={{margin:0,fontSize:13,fontWeight:600,color:G.text}}>{profile.name}</p><p style={{margin:"2px 0 0",fontSize:11,color:G.hint}}>{profile.weight}kg · {profile.height}cm · IMC {bmi}</p></div>
+      </div>
+      <div style={{textAlign:"right"}}>
+        <p style={{margin:0,fontSize:18,fontWeight:600,color:G.sage}}>{protGoal}<span style={{fontSize:11,color:G.hint,fontWeight:400}}> g prot</span></p>
+        <button onClick={()=>setEditing(true)} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:G.hint,padding:0,fontFamily:"inherit",marginTop:2}}>editar</button>
+      </div>
+    </div>
+  );
 }
 function ProfileSetup({onSave}){
   const[form,setForm]=useState({name:"",weight:"",height:""});
@@ -165,78 +182,91 @@ function ProfileSetup({onSave}){
     const perfil={name:form.name,weight:+form.weight,height:+form.height};
     await savePerfil(perfil);onSave(perfil);setSaving(false);
   };
-  return <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}><div style={{...glassCard,padding:32,maxWidth:360,width:"100%"}}><div style={{textAlign:"center",marginBottom:28}}><div style={{fontSize:36,marginBottom:10}}>🌿</div><h1 style={{margin:0,fontSize:22,fontWeight:300,color:G.text,letterSpacing:"-0.02em"}}>NutriQuest</h1><p style={{margin:"6px 0 0",fontSize:12,color:G.hint,letterSpacing:"0.04em"}}>TU COMPAÑERO NUTRICIONAL</p></div><label style={lbl}>Nombre</label><input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Tu nombre" style={inp}/><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}><div><label style={lbl}>Peso (kg)</label><input type="number" min="30" max="200" value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} placeholder="70" style={inp}/></div><div><label style={lbl}>Altura (cm)</label><input type="number" min="100" max="230" value={form.height} onChange={e=>setForm(f=>({...f,height:e.target.value}))} placeholder="175" style={inp}/></div></div>{prot&&<div style={{background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:10,padding:"12px 14px",marginBottom:16}}><div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:G.sage}}><div><p style={{margin:0,color:G.hint,fontSize:11,letterSpacing:"0.04em"}}>META DE PROTEÍNA</p><p style={{margin:"3px 0 0",fontSize:20,fontWeight:600,color:G.sage}}>{prot}g<span style={{fontSize:11,fontWeight:400,color:G.hint}}>/día</span></p></div>{bmi&&<div style={{textAlign:"right"}}><p style={{margin:0,color:G.hint,fontSize:11,letterSpacing:"0.04em"}}>IMC</p><p style={{margin:"3px 0 0",fontSize:20,fontWeight:600,color:G.sage}}>{bmi}</p></div>}</div><p style={{margin:"8px 0 0",fontSize:11,color:G.hint}}>Calculado como 2g × kg de peso corporal</p></div>}<Btn onClick={handleSave} full disabled={!valid} loading={saving}>Comenzar</Btn></div></div>;
+  return(
+    <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{...glassCard,padding:32,maxWidth:360,width:"100%"}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{fontSize:36,marginBottom:10}}>🌿</div>
+          <h1 style={{margin:0,fontSize:22,fontWeight:300,color:G.text,letterSpacing:"-0.02em"}}>NutriQuest</h1>
+          <p style={{margin:"6px 0 0",fontSize:12,color:G.hint,letterSpacing:"0.04em"}}>TU COMPAÑERO NUTRICIONAL</p>
+        </div>
+        <label style={lbl}>Nombre</label>
+        <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Tu nombre" style={inp}/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <div><label style={lbl}>Peso (kg)</label><input type="number" min="30" max="200" value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} placeholder="70" style={inp}/></div>
+          <div><label style={lbl}>Altura (cm)</label><input type="number" min="100" max="230" value={form.height} onChange={e=>setForm(f=>({...f,height:e.target.value}))} placeholder="175" style={inp}/></div>
+        </div>
+        {prot&&(
+          <div style={{background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:10,padding:"12px 14px",marginBottom:16}}>
+            <div style={{display:"flex",justifyContent:"space-between"}}>
+              <div><p style={{margin:0,color:G.hint,fontSize:11,letterSpacing:"0.04em"}}>META DE PROTEÍNA</p><p style={{margin:"3px 0 0",fontSize:20,fontWeight:600,color:G.sage}}>{prot}g<span style={{fontSize:11,fontWeight:400,color:G.hint}}>/día</span></p></div>
+              {bmi&&<div style={{textAlign:"right"}}><p style={{margin:0,color:G.hint,fontSize:11,letterSpacing:"0.04em"}}>IMC</p><p style={{margin:"3px 0 0",fontSize:20,fontWeight:600,color:G.sage}}>{bmi}</p></div>}
+            </div>
+            <p style={{margin:"8px 0 0",fontSize:11,color:G.hint}}>Calculado como 2g × kg de peso corporal</p>
+          </div>
+        )}
+        <Btn onClick={handleSave} full disabled={!valid} loading={saving}>Comenzar</Btn>
+      </div>
+    </div>
+  );
 }
 
-// ── Metrics component ──────────────────────────────────────────────────────
+// ── MetricsTab ─────────────────────────────────────────────────────────────
 function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRanking,setShowRanking}){
   const[period,setPeriod]=useState("week");
-
-  const getLocalKey=(d)=>d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
+  const getKey=d=>d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
 
   const getPeriodData=()=>{
     if(period==="week"){
       return Array.from({length:7},(_,i)=>{
         const d=new Date();d.setDate(d.getDate()-6+i);
-        const k=getLocalKey(d);
+        const k=getKey(d);
         const day=days[k]||{};
         const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];
         const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:null;
-        return{key:k,label:d.toLocaleDateString("es",{weekday:"short"}),score:score?Math.round(score*10)/10:null,prot:Math.round(allM.reduce((a,m)=>a+(m.protein_g||0),0)),workout:day.workout};
+        return{key:k,label:d.toLocaleDateString("es",{weekday:"short"}),score:score!=null?Math.round(score*10)/10:null,prot:Math.round(allM.reduce((a,m)=>a+(m.protein_g||0),0)),workout:day.workout};
       });
     }
     if(period==="month"){
       return Array.from({length:30},(_,i)=>{
         const d=new Date();d.setDate(d.getDate()-29+i);
-        const k=getLocalKey(d);
+        const k=getKey(d);
         const day=days[k]||{};
         const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];
         const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:null;
-        return{key:k,label:d.getDate().toString(),score:score?Math.round(score*10)/10:null,prot:Math.round(allM.reduce((a,m)=>a+(m.protein_g||0),0)),workout:day.workout};
+        return{key:k,label:d.getDate().toString(),score:score!=null?Math.round(score*10)/10:null,prot:Math.round(allM.reduce((a,m)=>a+(m.protein_g||0),0)),workout:day.workout};
       });
     }
     return Array.from({length:12},(_,i)=>{
       const d=new Date();d.setMonth(d.getMonth()-11+i);d.setDate(1);
-      const year=d.getFullYear(),month=d.getMonth();
-      const monthDays=Object.entries(days).filter(([k])=>{
-        const dd=new Date(k+"T12:00:00");
-        return dd.getFullYear()===year&&dd.getMonth()===month;
-      });
-      const allM=monthDays.flatMap(([,day])=>[...Object.values(day.meals||{}),...(day.snacks||[])]);
+      const yr=d.getFullYear(),mo=d.getMonth();
+      const mDays=Object.entries(days).filter(([k])=>{const dd=new Date(k+"T12:00:00");return dd.getFullYear()===yr&&dd.getMonth()===mo;});
+      const allM=mDays.flatMap(([,day])=>[...Object.values(day.meals||{}),...(day.snacks||[])]);
       const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:null;
-      const prot=monthDays.length?monthDays.reduce((acc,[,day])=>{
-        const m=[...Object.values(day.meals||{}),...(day.snacks||[])];
-        return acc+m.reduce((a,x)=>a+(x.protein_g||0),0);
-      },0)/monthDays.length:0;
-      const workouts=monthDays.filter(([,day])=>day.workout).length;
-      return{key:`${year}-${month}`,label:d.toLocaleDateString("es",{month:"short"}),score:score?Math.round(score*10)/10:null,prot:Math.round(prot),workouts};
+      const prot=mDays.length?mDays.reduce((acc,[,day])=>acc+[...Object.values(day.meals||{}),...(day.snacks||[])].reduce((a,m)=>a+(m.protein_g||0),0),0)/mDays.length:0;
+      return{key:`${yr}-${mo}`,label:d.toLocaleDateString("es",{month:"short"}),score:score!=null?Math.round(score*10)/10:null,prot:Math.round(prot),workouts:mDays.filter(([,day])=>day.workout).length};
     });
   };
 
   const data=getPeriodData();
   const maxProt=Math.max(...data.map(d=>d.prot),1);
   const scoreDays=data.filter(d=>d.score!=null);
-  const avgScore=scoreDays.length?(scoreDays.reduce((a,d)=>a+(d.score||0),0)/scoreDays.length).toFixed(1):"—";
+  const avgScore=scoreDays.length?(scoreDays.reduce((a,d)=>a+d.score,0)/scoreDays.length).toFixed(1):"—";
   const avgProt=Math.round(data.reduce((a,d)=>a+d.prot,0)/Math.max(data.length,1));
 
   const targetPerWeek=3;
   const weeksInPeriod=period==="week"?1:period==="month"?4:52;
   const targetTotal=targetPerWeek*weeksInPeriod;
-  const totalWorkouts=period==="year"
-    ?data.reduce((a,d)=>a+(d.workouts||0),0)
-    :data.filter(d=>d.workout).length;
+  const totalWorkouts=period==="year"?data.reduce((a,d)=>a+(d.workouts||0),0):data.filter(d=>d.workout).length;
   const volumePct=Math.min(100,Math.round((totalWorkouts/targetTotal)*100));
   const volumeColor=totalWorkouts>=targetTotal?G.sage:totalWorkouts>=targetTotal*0.7?G.gold:G.red;
 
   const coherenceDays=Object.values(days).filter(d=>d.workout?.coherence_score);
-  const avgCoherence=coherenceDays.length
-    ?(coherenceDays.reduce((a,d)=>a+(d.workout.coherence_score||0),0)/coherenceDays.length).toFixed(1)
-    :null;
+  const avgCoherence=coherenceDays.length?(coherenceDays.reduce((a,d)=>a+(d.workout.coherence_score||0),0)/coherenceDays.length).toFixed(1):null;
 
   let currentStreak=0;const sd=new Date();
   while(true){
-    const k=getLocalKey(sd);
-    const day=days[k];
+    const k=getKey(sd);const day=days[k];
     const has=day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);
     if(!has)break;
     currentStreak++;sd.setDate(sd.getDate()-1);
@@ -250,25 +280,26 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
   }
   const calDays=Array.from({length:30},(_,i)=>{
     const d=new Date();d.setDate(d.getDate()-29+i);
-    const k=getLocalKey(d);
-    const day=days[k];
+    const day=days[getKey(d)];
     return day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);
   });
 
+  // Gráfico SVG — coordenadas numéricas absolutas
+  const W=300,H=80;
+  const barW=W/data.length;
+  const linePoints=data.map((d,i)=>({
+    x:(i+0.5)*barW,
+    y:d.score!=null?H-(d.score/10)*H*0.95:null,
+    score:d.score,
+  }));
+  const validLine=linePoints.filter(p=>p.y!=null);
+
   const PeriodBtn=({id,label})=>(
-    <button onClick={()=>setPeriod(id)} style={{padding:"6px 14px",borderRadius:99,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:11,fontWeight:period===id?600:400,background:period===id?"rgba(90,122,84,0.2)":"transparent",color:period===id?G.sage:G.hint,letterSpacing:"0.03em"}}>{label}</button>
+    <button onClick={()=>setPeriod(id)} style={{padding:"6px 14px",borderRadius:99,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:11,fontWeight:period===id?600:400,background:period===id?"rgba(90,122,84,0.2)":"transparent",color:period===id?G.sage:G.hint}}>{label}</button>
   );
 
-  // Puntos de línea para el gráfico
-  const linePoints=data.map((d,i)=>{
-    const x=((i+0.5)/data.length)*100;
-    const y=d.score!=null?80-(d.score/10)*76:null;
-    return y!=null?{x,y,score:d.score}:null;
-  }).filter(Boolean);
-
-  return (
+  return(
     <div>
-      {/* Selector período */}
       <div style={{...glassSubtle,display:"flex",justifyContent:"center",gap:4,padding:"4px",borderRadius:99,marginBottom:16}}>
         <PeriodBtn id="week" label="Semana"/>
         <PeriodBtn id="month" label="Mes"/>
@@ -277,54 +308,59 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
 
       {/* Gráfico combinado */}
       <div style={{...glassCard,padding:20,marginBottom:12}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
           <p style={{margin:0,fontSize:13,fontWeight:500,color:G.text}}>Proteína & Puntaje</p>
           <div style={{display:"flex",gap:12,fontSize:11,color:G.hint}}>
-            <span>Prom. score <strong style={{color:G.sage}}>{avgScore}</strong></span>
-            <span>Prom. prot <strong style={{color:G.gold}}>{avgProt}g</strong></span>
+            <span>Score <strong style={{color:G.sage}}>{avgScore}</strong></span>
+            <span>Prot <strong style={{color:G.gold}}>{avgProt}g</strong></span>
           </div>
         </div>
-        <div style={{position:"relative",height:100}}>
+        <div style={{position:"relative"}}>
           {/* Barras doradas proteína */}
-          <div style={{display:"flex",alignItems:"flex-end",gap:period==="month"?2:4,height:80,position:"absolute",bottom:20,left:0,right:0}}>
-            {data.map((d)=>{
+          <div style={{display:"flex",alignItems:"flex-end",height:80,gap:period==="month"?1:3}}>
+            {data.map(d=>{
               const h=d.prot?Math.round((d.prot/maxProt)*76):2;
               return <div key={d.key} style={{flex:1,height:h,background:G.goldLight,borderTop:`2px solid ${G.gold}`,borderRadius:"3px 3px 0 0",alignSelf:"flex-end"}}/>;
             })}
           </div>
-          {/* Línea verde puntaje */}
-          <svg style={{position:"absolute",bottom:20,left:0,width:"100%",height:80,overflow:"visible"}}>
-            {linePoints.length>1&&(
+          {/* Línea verde puntaje — SVG con coordenadas absolutas */}
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            preserveAspectRatio="none"
+            style={{position:"absolute",top:0,left:0,width:"100%",height:80,overflow:"visible"}}
+          >
+            {validLine.length>1&&(
               <polyline
-                points={linePoints.map(p=>`${p.x}%,${p.y}`).join(" ")}
-                fill="none" stroke={G.sage} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" opacity="0.9"
+                points={validLine.map(p=>`${p.x},${p.y}`).join(" ")}
+                fill="none"
+                stroke={G.sage}
+                strokeWidth="2.5"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                opacity="0.9"
+                vectorEffect="non-scaling-stroke"
               />
             )}
-            {linePoints.map((p,i)=>(
-              <circle key={i} cx={`${p.x}%`} cy={p.y} r="3.5" fill={G.sage} opacity="0.9"/>
+            {validLine.map((p,i)=>(
+              <circle key={i} cx={p.x} cy={p.y} r="3" fill={G.sage} opacity="0.9" vectorEffect="non-scaling-stroke"/>
             ))}
           </svg>
-          {/* Etiquetas eje X */}
-          <div style={{display:"flex",position:"absolute",bottom:0,left:0,right:0}}>
-            {data.map((d,i)=>(
-              (period==="week"||period==="year"||(period==="month"&&i%5===0))&&
-              <div key={d.key} style={{flex:1,textAlign:"center"}}>
-                <span style={{fontSize:9,color:G.hint}}>{d.label}</span>
-              </div>
-            ))}
-          </div>
         </div>
-        <div style={{display:"flex",gap:16,marginTop:8,fontSize:11,color:G.hint}}>
-          <span style={{display:"flex",alignItems:"center",gap:4}}>
-            <span style={{width:12,height:8,background:G.goldLight,border:`1px solid ${G.gold}`,borderRadius:2,display:"inline-block"}}/>Proteína (g)
-          </span>
-          <span style={{display:"flex",alignItems:"center",gap:4}}>
-            <span style={{width:12,height:2,background:G.sage,display:"inline-block",borderRadius:1}}/>Puntaje (1-10)
-          </span>
+        {/* Etiquetas eje X */}
+        <div style={{display:"flex",marginTop:4}}>
+          {data.map((d,i)=>(
+            (period==="week"||period==="year"||(period==="month"&&i%5===0))
+              ?<div key={d.key} style={{flex:1,textAlign:"center"}}><span style={{fontSize:9,color:G.hint}}>{d.label}</span></div>
+              :<div key={d.key} style={{flex:1}}/>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:16,marginTop:6,fontSize:11,color:G.hint}}>
+          <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:12,height:8,background:G.goldLight,border:`1px solid ${G.gold}`,borderRadius:2,display:"inline-block"}}/>Proteína (g)</span>
+          <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:16,height:2,background:G.sage,display:"inline-block",borderRadius:1}}/>Puntaje</span>
         </div>
       </div>
 
-      {/* Volumen de entrenamiento */}
+      {/* Volumen */}
       <div style={{...glassCard,padding:20,marginBottom:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
           <p style={{margin:0,fontSize:13,fontWeight:500,color:G.text}}>Volumen de entrenamiento</p>
@@ -348,9 +384,7 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
             <p style={{margin:"0 0 4px",fontSize:13,color:volumeColor,fontWeight:600}}>
               {totalWorkouts>=targetTotal?"✓ Meta cumplida":totalWorkouts>=targetTotal*0.7?"Casi llegás":"Por debajo de la meta"}
             </p>
-            <p style={{margin:0,fontSize:11,color:G.hint,lineHeight:1.5}}>
-              {period==="week"?"Esta semana":period==="month"?"Último mes":"Este año"} · {totalWorkouts} sesión{totalWorkouts!==1?"es":""}
-            </p>
+            <p style={{margin:0,fontSize:11,color:G.hint}}>{period==="week"?"Esta semana":period==="month"?"Último mes":"Este año"} · {totalWorkouts} sesión{totalWorkouts!==1?"es":""}</p>
           </div>
         </div>
       </div>
@@ -368,14 +402,10 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
               <div style={{background:"rgba(255,255,255,0.3)",borderRadius:99,height:6,overflow:"hidden",marginBottom:8}}>
                 <div style={{width:`${(avgCoherence/10)*100}%`,background:G.sage,height:"100%",borderRadius:99,opacity:0.8}}/>
               </div>
-              <p style={{margin:0,fontSize:11,color:G.hint}}>
-                {avgCoherence>=8?"Excelente sincronía entre lo que comés y entrenás":avgCoherence>=6?"Buena coherencia, hay margen para mejorar":"Revisá la relación entre tus comidas y entrenamientos"}
-              </p>
+              <p style={{margin:0,fontSize:11,color:G.hint}}>{avgCoherence>=8?"Excelente sincronía entre lo que comés y entrenás":avgCoherence>=6?"Buena coherencia, hay margen para mejorar":"Revisá la relación entre tus comidas y entrenamientos"}</p>
             </div>
           </div>
-        ):(
-          <p style={{margin:0,fontSize:12,color:G.hint,fontStyle:"italic"}}>Registrá entrenamientos para ver este índice.</p>
-        )}
+        ):<p style={{margin:0,fontSize:12,color:G.hint,fontStyle:"italic"}}>Registrá entrenamientos para ver este índice.</p>}
       </div>
 
       {/* Racha */}
@@ -393,14 +423,11 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
           </div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(10,1fr)",gap:4}}>
-          {calDays.map((active,i)=>(
-            <div key={i} style={{height:16,borderRadius:3,background:active?"rgba(90,122,84,0.6)":"rgba(255,255,255,0.15)"}}/>
-          ))}
+          {calDays.map((active,i)=><div key={i} style={{height:16,borderRadius:3,background:active?"rgba(90,122,84,0.6)":"rgba(255,255,255,0.15)"}}/>)}
         </div>
         <p style={{margin:"6px 0 0",fontSize:10,color:G.hint}}>Últimos 30 días — verde = día activo</p>
       </div>
 
-      {/* Resumen IA */}
       <Btn onClick={fetchWeekSummary} loading={weekSummaryLoading} full>Resumen semanal con IA</Btn>
       {weekSummary&&(
         <div style={{...glassCard,padding:20,marginTop:12}}>
@@ -567,8 +594,7 @@ export default function App(){
       const day=days[k]||{};
       const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];
       const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:0;
-      const prot=allM.reduce((a,m)=>a+(m.protein_g||0),0);
-      return`${k}: score ${Math.round(score*10)/10}, prot ${Math.round(prot)}g`;
+      return`${k}: score ${Math.round(score*10)/10}, prot ${Math.round(allM.reduce((a,m)=>a+(m.protein_g||0),0))}g`;
     }).join("; ");
     try{
       const r=await callAI(
@@ -580,12 +606,18 @@ export default function App(){
     setWeekSummaryLoading(false);
   };
 
-  if(loading)return <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center",color:G.muted}}><div style={{fontSize:40,marginBottom:12}}>🌿</div><p style={{fontSize:14,letterSpacing:"0.04em"}}>Cargando…</p></div></div>;
+  if(loading)return(
+    <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{textAlign:"center",color:G.muted}}>
+        <div style={{fontSize:40,marginBottom:12}}>🌿</div>
+        <p style={{fontSize:14,letterSpacing:"0.04em"}}>Cargando…</p>
+      </div>
+    </div>
+  );
   if(!profile)return <ProfileSetup onSave={setProfile}/>;
 
   const proteinGoal=Math.round(profile.weight*2);
   const todayProt=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.protein_g||0),0);
-
   const TABS=[
     {id:"today",label:"Hoy"},{id:"workout",label:"Entreno"},
     {id:"history",label:"Historial"},{id:"metrics",label:"Métricas"},{id:"badges",label:"Badges"},
@@ -618,7 +650,6 @@ export default function App(){
         ))}
       </div>
 
-      {/* TODAY */}
       {tab==="today"&&(
         <div>
           <div style={{...glassCard,overflow:"hidden",marginBottom:16}}>
@@ -648,7 +679,6 @@ export default function App(){
         </div>
       )}
 
-      {/* WORKOUT */}
       {tab==="workout"&&(
         <div style={{...glassCard,padding:20}}>
           <p style={{margin:"0 0 16px",fontSize:14,fontWeight:500,color:G.text}}>Entrenamiento de hoy</p>
@@ -668,7 +698,6 @@ export default function App(){
         </div>
       )}
 
-      {/* HISTORY */}
       {tab==="history"&&(
         <div>
           <input type="date" value={histDate} onChange={e=>setHistDate(e.target.value)} style={{...inp,marginBottom:16}}/>
@@ -716,14 +745,18 @@ export default function App(){
                     </div>
                   );
                 })}
-                {hDay.workout&&<div style={{...glassCard,padding:"14px 18px"}}><p style={{margin:"0 0 10px",fontWeight:500,fontSize:13}}>🏋️ {hDay.workout.type}</p><WorkoutCard workout={hDay.workout} compact/></div>}
+                {hDay.workout&&(
+                  <div style={{...glassCard,padding:"14px 18px"}}>
+                    <p style={{margin:"0 0 10px",fontWeight:500,fontSize:13}}>🏋️ {hDay.workout.type}</p>
+                    <WorkoutCard workout={hDay.workout} compact/>
+                  </div>
+                )}
               </div>
             );
           })()}
         </div>
       )}
 
-      {/* METRICS */}
       {tab==="metrics"&&(
         <MetricsTab
           days={days}
@@ -735,7 +768,6 @@ export default function App(){
         />
       )}
 
-      {/* BADGES */}
       {tab==="badges"&&(
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           {BADGES_DEF.map(b=>{
