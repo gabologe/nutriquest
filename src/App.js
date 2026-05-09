@@ -99,15 +99,52 @@ function MealDetails({meal}){
   const hyC={excelente:G.sage,bueno:G.sageMid,moderado:G.gold,bajo:G.red};
   return <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(255,255,255,0.4)",fontSize:13}}><div style={{marginBottom:8}}><span style={{color:G.hint,fontSize:12}}>Hipertrofia — </span><span style={{color:hyC[meal.hypertrophy]||G.muted,fontWeight:600}}>{meal.hypertrophy}</span></div>{(meal.nutrients||[]).map((n,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:5}}><span style={{color:G.sage,fontWeight:600,minWidth:80,fontSize:12}}>{n.name}</span><span style={{color:G.muted,fontSize:12,lineHeight:1.4}}>{n.benefit}</span></div>)}{meal.tip&&<div style={{marginTop:10,background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:8,padding:"10px 12px",color:G.sage,fontSize:12,fontStyle:"italic"}}>💡 {meal.tip}</div>}</div>;
 }
-function MealCard({meal}){
+function MealCard({meal,onMoveDate}){
   const[exp,setExp]=useState(false);
+  const[moving,setMoving]=useState(false);
+  const[newDate,setNewDate]=useState("");
   const skinC={beneficioso:G.sage,neutro:G.muted,inflamatorio:G.red};
   const skinBg={beneficioso:G.sageLight,neutro:"rgba(255,255,255,0.2)",inflamatorio:G.redLight};
   const skinBd={beneficioso:G.sageBorder,neutro:G.borderSubtle,inflamatorio:"rgba(180,80,80,0.25)"};
-  return <div><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",cursor:"pointer"}} onClick={()=>setExp(e=>!e)}><div style={{flex:1}}><p style={{margin:"0 0 8px",color:G.text,fontSize:13,lineHeight:1.5}}>{meal.desc}</p><div style={{display:"flex",gap:6,flexWrap:"wrap"}}><Tag bg={G.goldLight} color={G.gold} border="rgba(180,148,72,0.25)">⭐ {meal.score}/10</Tag><Tag>💪 {meal.protein_g}g</Tag><Tag bg={skinBg[meal.skin_impact]} color={skinC[meal.skin_impact]} border={skinBd[meal.skin_impact]}>🌿 {meal.skin_impact}</Tag></div></div><span style={{fontSize:10,color:G.hint,marginLeft:10,marginTop:2}}>{exp?"▲":"▼"}</span></div>{exp&&<MealDetails meal={meal}/>}</div>;
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",cursor:"pointer"}} onClick={()=>setExp(e=>!e)}>
+        <div style={{flex:1}}>
+          <p style={{margin:"0 0 8px",color:G.text,fontSize:13,lineHeight:1.5}}>{meal.desc}</p>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            <Tag bg={G.goldLight} color={G.gold} border="rgba(180,148,72,0.25)">⭐ {meal.score}/10</Tag>
+            <Tag>💪 {meal.protein_g}g</Tag>
+            <Tag bg={skinBg[meal.skin_impact]} color={skinC[meal.skin_impact]} border={skinBd[meal.skin_impact]}>🌿 {meal.skin_impact}</Tag>
+          </div>
+        </div>
+        <span style={{fontSize:10,color:G.hint,marginLeft:10,marginTop:2}}>{exp?"▲":"▼"}</span>
+      </div>
+      {exp&&(
+        <div>
+          <MealDetails meal={meal}/>
+          {onMoveDate&&(
+            <div style={{marginTop:10}}>
+              {!moving?(
+                <button onClick={()=>setMoving(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"4px 10px",fontSize:11,color:G.hint,cursor:"pointer",fontFamily:"inherit"}}>
+                  📅 Mover a otro día
+                </button>
+              ):(
+                <div style={{display:"flex",gap:8,alignItems:"center",marginTop:6}}>
+                  <input type="date" value={newDate} onChange={e=>setNewDate(e.target.value)}
+                    style={{...inp,marginBottom:0,flex:1,fontSize:12,padding:"6px 10px"}}/>
+                  <Btn onClick={()=>{if(newDate){onMoveDate(newDate);setMoving(false);setNewDate("");}}} disabled={!newDate}>OK</Btn>
+                  <button onClick={()=>{setMoving(false);setNewDate("");}} style={{background:"none",border:"none",cursor:"pointer",color:G.hint,fontSize:12,fontFamily:"inherit"}}>✕</button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
-function MealSlot({slot,meal,input,onInput,loading,onSubmit}){
-  return <div style={{padding:"15px 18px"}}><div style={{fontWeight:500,fontSize:13,color:G.text,marginBottom:10,display:"flex",alignItems:"center",gap:7}}><span style={{fontSize:16}}>{slot.emoji}</span><span style={{letterSpacing:"0.01em",color:G.muted}}>{slot.label}</span></div>{meal?<MealCard meal={meal}/>:<div style={{display:"flex",gap:8}}><input value={input} onChange={e=>onInput(e.target.value)} placeholder="¿Qué comiste?" style={{...inp,flex:1,marginBottom:0}} onKeyDown={e=>e.key==="Enter"&&onSubmit()}/><Btn loading={loading} onClick={onSubmit}>Analizar</Btn></div>}</div>;
+function MealSlot({slot,meal,input,onInput,loading,onSubmit,onMoveDate}){
+  return <div style={{padding:"15px 18px"}}><div style={{fontWeight:500,fontSize:13,color:G.text,marginBottom:10,display:"flex",alignItems:"center",gap:7}}><span style={{fontSize:16}}>{slot.emoji}</span><span style={{letterSpacing:"0.01em",color:G.muted}}>{slot.label}</span></div>{meal?<MealCard meal={meal} onMoveDate={onMoveDate}/>:<div style={{display:"flex",gap:8}}><input value={input} onChange={e=>onInput(e.target.value)} placeholder="¿Qué comiste?" style={{...inp,flex:1,marginBottom:0}} onKeyDown={e=>e.key==="Enter"&&onSubmit()}/><Btn loading={loading} onClick={onSubmit}>Analizar</Btn></div>}</div>;
 }
 function WorkoutCard({workout,compact}){
   return <div><div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:compact?0:10}}><Tag>{workout.type}</Tag><Tag>{workout.duration} min</Tag><Tag>{"●".repeat(workout.intensity)} int.</Tag></div>{!compact&&workout.coherence_score&&<div style={{marginTop:12}}><div style={{fontSize:13,marginBottom:8}}><span style={{color:G.hint,fontSize:12}}>Coherencia — </span><span style={{fontWeight:600,color:G.sage}}>{workout.coherence_score}/10</span></div><p style={{fontSize:12,color:G.muted,margin:"0 0 8px",lineHeight:1.5}}>{workout.balance}</p>{(workout.strengths||[]).map((s,i)=><div key={i} style={{fontSize:12,color:G.sage,marginBottom:3}}>✓ {s}</div>)}{(workout.suggestions||[]).map((s,i)=><div key={i} style={{fontSize:12,color:G.gold,marginBottom:3}}>→ {s}</div>)}</div>}</div>;
@@ -436,6 +473,27 @@ export default function App(){
   };
 
   useEffect(()=>{if(streak>=3)unlockBadge("streak_3");if(streak>=7){unlockBadge("streak_7");unlockBadge("week_complete");}},[streak,unlockBadge]);
+  const handleMoveDate=async(slotId,targetDate,isMeal=true,snackIndex=null)=>{
+  const fromDay=days[today]||{meals:{},snacks:[],workout:null};
+  const toDay=days[targetDate]||{meals:{},snacks:[],workout:null};
+  if(isMeal){
+    const meal=fromDay.meals[slotId];
+    if(!meal)return;
+    const newFromMeals={...fromDay.meals};delete newFromMeals[slotId];
+    const newToMeals={...toDay.meals,[slotId]:meal};
+    await saveDay(today,{...fromDay,meals:newFromMeals});
+    await saveDay(targetDate,{...toDay,meals:newToMeals});
+  } else {
+    const snack=(fromDay.snacks||[])[snackIndex];
+    if(!snack)return;
+    const newFromSnacks=(fromDay.snacks||[]).filter((_,i)=>i!==snackIndex);
+    const newToSnacks=[...(toDay.snacks||[]),snack];
+    await saveDay(today,{...fromDay,snacks:newFromSnacks});
+    await saveDay(targetDate,{...toDay,snacks:newToSnacks});
+  }
+  const[p,d]=await Promise.all([loadPerfil(),loadAllDays()]);
+  setProfile(p);setDays(d);
+};
   const triggerConfetti=()=>{setConfetti(true);setTimeout(()=>setConfetti(false),2000);};
 
   const handleMealSubmit=async(slotId,label)=>{
@@ -531,7 +589,7 @@ export default function App(){
           <div style={{...glassCard,overflow:"hidden",marginBottom:16}}>
             {FIXED_SLOTS.map((slot,i)=>(
               <div key={slot.id}>
-                <MealSlot slot={slot} meal={todayData.meals?.[slot.id]} input={mealInputs[slot.id]||""} onInput={v=>setMealInputs(x=>({...x,[slot.id]:v}))} loading={mealLoading[slot.id]} onSubmit={()=>handleMealSubmit(slot.id,slot.label)}/>
+                <MealSlot slot={slot} meal={todayData.meals?.[slot.id]} input={mealInputs[slot.id]||""} onInput={v=>setMealInputs(x=>({...x,[slot.id]:v}))} loading={mealLoading[slot.id]} onSubmit={()=>handleMealSubmit(slot.id,slot.label)} onMoveDate={(date)=>handleMoveDate(slot.id,date,true)}/>
                 {i<FIXED_SLOTS.length-1&&<Divider/>}
               </div>
             ))}
@@ -541,7 +599,7 @@ export default function App(){
             {(todayData.snacks||[]).map((s,i)=>(
               <div key={i} style={{marginBottom:12,paddingBottom:12,borderBottom:"1px solid rgba(255,255,255,0.4)"}}>
                 <p style={{margin:"0 0 6px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>{s.name.toUpperCase()}</p>
-                <MealCard meal={s}/>
+                <MealCard meal={s} onMoveDate={(date)=>handleMoveDate(null,date,false,i)}/>
               </div>
             ))}
             <div style={{display:"flex",gap:8,marginBottom:8}}>
