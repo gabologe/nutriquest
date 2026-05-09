@@ -75,15 +75,29 @@ const inp={width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm
 const lbl={display:"block",fontSize:12,color:G.hint,marginBottom:4,marginTop:10,letterSpacing:"0.05em",textTransform:"uppercase"};
 
 function Btn({onClick,loading,children,full,disabled}){
-  return <button onClick={onClick} disabled={loading||disabled} style={{
-    padding:"10px 18px",borderRadius:10,
-    border:"none",
-    background:loading||disabled?"rgba(180,180,180,0.3)":"#5a7a54",
-    color:loading||disabled?G.hint:"#fff",
-    fontWeight:600,fontSize:13,width:full?"100%":"auto",
-    fontFamily:"inherit",letterSpacing:"0.02em",transition:"all 0.2s",
-    cursor:loading||disabled?"not-allowed":"pointer",
-  }}>{loading?"…":children}</button>;
+  return(
+    <button onClick={onClick} disabled={loading||disabled} style={{
+      padding:"10px 18px",borderRadius:10,border:"none",
+      background:loading||disabled?"#5a7a54":"#5a7a54",
+      color:"#fff",fontWeight:600,fontSize:13,width:full?"100%":"auto",
+      fontFamily:"inherit",letterSpacing:"0.02em",transition:"all 0.2s",
+      cursor:loading||disabled?"not-allowed":"pointer",
+      opacity:loading||disabled?0.8:1,
+      display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+    }}>
+      {loading?(
+        <>
+          <span style={{
+            width:14,height:14,border:"2px solid rgba(255,255,255,0.4)",
+            borderTop:"2px solid #fff",borderRadius:"50%",
+            display:"inline-block",
+            animation:"spin 0.7s linear infinite",
+          }}/>
+          <style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style>
+        </>
+      ):children}
+    </button>
+  );
 }
 function Tag({color,bg,border,children}){
   return <span style={{fontSize:12,background:bg||G.sageLight,color:color||G.sage,border:`1px solid ${border||G.sageBorder}`,padding:"3px 9px",borderRadius:99,fontWeight:500,letterSpacing:"0.02em"}}>{children}</span>;
