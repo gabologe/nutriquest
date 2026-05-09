@@ -323,35 +323,40 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
     })}
   </div>
   {/* Círculos con puntaje */}
-  <div style={{display:"flex",alignItems:"center",gap:period==="month"?1:3,marginBottom:8}}>
-    {data.map(d=>(
-      <div key={d.key} style={{flex:1,display:"flex",justifyContent:"center"}}>
-        {d.score!=null?(
-          <div style={{
-            width:28,height:28,borderRadius:"50%",
-            background:G.sageLight,border:`2px solid ${G.sage}`,
-            display:"flex",alignItems:"center",justifyContent:"center",
-            fontSize:9,fontWeight:700,color:G.sage,flexShrink:0,
-          }}>{d.score}</div>
-        ):(
-          <div style={{width:28,height:28,borderRadius:"50%",background:"rgba(255,255,255,0.1)",border:`1px solid ${G.borderSubtle}`,flexShrink:0}}/>
-        )}
-      </div>
-    ))}
-  </div>
-  {/* Etiquetas */}
-  <div style={{display:"flex",gap:period==="month"?1:3}}>
-    {data.map((d,i)=>(
-      (period==="week"||period==="year"||(period==="month"&&i%5===0))
-        ?<div key={d.key} style={{flex:1,textAlign:"center"}}><span style={{fontSize:9,color:G.hint}}>{d.label}</span></div>
-        :<div key={d.key} style={{flex:1}}/>
-    ))}
-  </div>
-  <div style={{display:"flex",gap:16,marginTop:8,fontSize:11,color:G.hint}}>
-    <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:12,height:8,background:G.goldLight,border:`1px solid ${G.gold}`,borderRadius:2,display:"inline-block"}}/>Proteína (g)</span>
-    <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:14,height:14,borderRadius:"50%",background:G.sageLight,border:`2px solid ${G.sage}`,display:"inline-block"}}/>Puntaje</span>
+  {/* Línea + círculos con puntaje */}
+<div style={{position:"relative",height:50,marginBottom:8}}>
+  <svg style={{position:"absolute",top:0,left:0,width:"100%",height:"100%"}}>
+    {data.map((d,i)=>{
+      if(i===0||d.score==null||data[i-1].score==null)return null;
+      const x1=((i-0.5)/data.length)*100;
+      const x2=((i+0.5)/data.length)*100;
+      const y1=50-((data[i-1].score||0)/10)*40;
+      const y2=50-(d.score/10)*40;
+      return <line key={i} x1={`${x1}%`} y1={y1} x2={`${x2}%`} y2={y2} stroke={G.sage} strokeWidth="2" opacity="0.7" strokeDasharray="4,3"/>;
+    })}
+  </svg>
+  <div style={{display:"flex",alignItems:"flex-end",height:"100%"}}>
+    {data.map(d=>{
+      const bottom=d.score!=null?`${(d.score/10)*40}px`:"0px";
+      return(
+        <div key={d.key} style={{flex:1,display:"flex",justifyContent:"center",position:"relative"}}>
+          {d.score!=null&&(
+            <div style={{
+              position:"absolute",bottom,
+              width:26,height:26,borderRadius:"50%",
+              background:G.sage,
+              display:"flex",alignItems:"center",justifyContent:"center",
+              fontSize:10,fontWeight:700,color:"#fff",
+              boxShadow:"0 2px 8px rgba(90,122,84,0.4)",
+              transform:"translateY(50%)",
+            }}>{d.score}</div>
+          )}
+        </div>
+      );
+    })}
   </div>
 </div>
+
       {/* Volumen */}
       <div style={{...glassCard,padding:20,marginBottom:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
