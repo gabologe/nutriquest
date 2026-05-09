@@ -122,25 +122,23 @@ function MealCard({meal,onMoveDate,onDelete}){
       {exp&&(
         <div>
           <MealDetails meal={meal}/>
-          {onMoveDate&&(
-            <div style={{marginTop:10}}>
-              {!moving?(
-                <div style={{display:"flex",gap:8,marginTop:10}}>
-                  <button onClick={()=>setMoving(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"4px 10px",fontSize:11,color:G.hint,cursor:"pointer",fontFamily:"inherit"}}>
-                    📅 Mover fecha
-                  </button>
-                  <button onClick={()=>onDelete&&onDelete()} style={{background:"none",border:`1px solid rgba(180,80,80,0.25)`,borderRadius:8,padding:"4px 10px",fontSize:11,color:G.red,cursor:"pointer",fontFamily:"inherit"}}>
-                    🗑️ Eliminar
-                  </button>
-                </div>
-              ):(
-                <div style={{display:"flex",gap:8,alignItems:"center",marginTop:6}}>
-                  <input type="date" value={newDate} onChange={e=>setNewDate(e.target.value)}
-                    style={{...inp,marginBottom:0,flex:1,fontSize:12,padding:"6px 10px"}}/>
-                  <Btn onClick={()=>{if(newDate){onMoveDate(newDate);setMoving(false);setNewDate("");}}} disabled={!newDate}>OK</Btn>
-                  <button onClick={()=>{setMoving(false);setNewDate("");}} style={{background:"none",border:"none",cursor:"pointer",color:G.hint,fontSize:12,fontFamily:"inherit"}}>✕</button>
-                </div>
-              )}
+          <div style={{display:"flex",gap:8,marginTop:12}}>
+            {onMoveDate&&!moving&&(
+              <button onClick={(e)=>{e.stopPropagation();setMoving(true);}} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"4px 10px",fontSize:11,color:G.hint,cursor:"pointer",fontFamily:"inherit"}}>
+                📅 Mover fecha
+              </button>
+            )}
+            {onDelete&&(
+              <button onClick={(e)=>{e.stopPropagation();if(window.confirm("¿Eliminar esta comida?"))onDelete();}} style={{background:"none",border:"1px solid rgba(180,80,80,0.25)",borderRadius:8,padding:"4px 10px",fontSize:11,color:G.red,cursor:"pointer",fontFamily:"inherit"}}>
+                🗑️ Eliminar
+              </button>
+            )}
+          </div>
+          {moving&&(
+            <div style={{display:"flex",gap:8,alignItems:"center",marginTop:8}}>
+              <input type="date" value={newDate} onChange={e=>setNewDate(e.target.value)} style={{...inp,marginBottom:0,flex:1,fontSize:12,padding:"6px 10px"}}/>
+              <Btn onClick={()=>{if(newDate){onMoveDate(newDate);setMoving(false);setNewDate("");}}} disabled={!newDate}>OK</Btn>
+              <button onClick={()=>{setMoving(false);setNewDate("");}} style={{background:"none",border:"none",cursor:"pointer",color:G.hint,fontSize:13,fontFamily:"inherit"}}>✕</button>
             </div>
           )}
         </div>
@@ -149,9 +147,18 @@ function MealCard({meal,onMoveDate,onDelete}){
   );
 }
 function MealSlot({slot,meal,input,onInput,loading,onSubmit,onMoveDate,onDelete}){
-  return <div style={{padding:"15px 18px"}}><div style={{fontWeight:500,fontSize:13,color:G.text,marginBottom:10,display:"flex",alignItems:"center",gap:7}}><span style={{fontSize:16}}>{slot.emoji}</span><span style={{letterSpacing:"0.01em",color:G.muted}}>{slot.label}</span></div>{meal?<MealCard meal={meal} onMoveDate={onMoveDate} onDelete={onDelete}/>:<div style={{display:"flex",gap:8}}><input value={input} onChange={e=>onInput(e.target.value)} placeholder="¿Qué comiste?" style={{...inp,flex:1,marginBottom:0}} onKeyDown={e=>e.key==="Enter"&&onSubmit()}/><Btn loading={loading} onClick={onSubmit}>Analizar</Btn></div>}</div>;
-}
-  return <div style={{padding:"15px 18px"}}><div style={{fontWeight:500,fontSize:13,color:G.text,marginBottom:10,display:"flex",alignItems:"center",gap:7}}><span style={{fontSize:16}}>{slot.emoji}</span><span style={{letterSpacing:"0.01em",color:G.muted}}>{slot.label}</span></div>{meal?<MealCard meal={meal} onMoveDate={onMoveDate}/>:<div style={{display:"flex",gap:8}}><input value={input} onChange={e=>onInput(e.target.value)} placeholder="¿Qué comiste?" style={{...inp,flex:1,marginBottom:0}} onKeyDown={e=>e.key==="Enter"&&onSubmit()}/><Btn loading={loading} onClick={onSubmit}>Analizar</Btn></div>}</div>;
+  return(
+    <div style={{padding:"15px 18px"}}>
+      <div style={{fontWeight:500,fontSize:13,color:G.text,marginBottom:10,display:"flex",alignItems:"center",gap:7}}>
+        <span style={{fontSize:16}}>{slot.emoji}</span>
+        <span style={{letterSpacing:"0.01em",color:G.muted}}>{slot.label}</span>
+      </div>
+      {meal
+        ? <MealCard meal={meal} onMoveDate={onMoveDate} onDelete={onDelete}/>
+        : <div style={{display:"flex",gap:8}}><input value={input} onChange={e=>onInput(e.target.value)} placeholder="¿Qué comiste?" style={{...inp,flex:1,marginBottom:0}} onKeyDown={e=>e.key==="Enter"&&onSubmit()}/><Btn loading={loading} onClick={onSubmit}>Analizar</Btn></div>
+      }
+    </div>
+  );
 }
 function WorkoutCard({workout,compact}){
   return <div><div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:compact?0:10}}><Tag>{workout.type}</Tag><Tag>{workout.duration} min</Tag><Tag>{"●".repeat(workout.intensity)} int.</Tag></div>{!compact&&workout.coherence_score&&<div style={{marginTop:12}}><div style={{fontSize:13,marginBottom:8}}><span style={{color:G.hint,fontSize:12}}>Coherencia — </span><span style={{fontWeight:600,color:G.sage}}>{workout.coherence_score}/10</span></div><p style={{fontSize:12,color:G.muted,margin:"0 0 8px",lineHeight:1.5}}>{workout.balance}</p>{(workout.strengths||[]).map((s,i)=><div key={i} style={{fontSize:12,color:G.sage,marginBottom:3}}>✓ {s}</div>)}{(workout.suggestions||[]).map((s,i)=><div key={i} style={{fontSize:12,color:G.gold,marginBottom:3}}>→ {s}</div>)}</div>}</div>;
@@ -244,7 +251,6 @@ function ProfileSetup({onSave}){
 function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRanking,setShowRanking}){
   const[period,setPeriod]=useState("week");
   const getKey=d=>d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
-
   const getPeriodData=()=>{
     if(period==="week"){
       return Array.from({length:7},(_,i)=>{
@@ -274,34 +280,28 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
       return{key:`${yr}-${mo}`,label:d.toLocaleDateString("es",{month:"short"}),score:score!=null?Math.round(score*10)/10:null,prot:Math.round(prot),workouts:mDays.filter(([,day])=>day.workout).length};
     });
   };
-
   const data=getPeriodData();
   const maxProt=Math.max(...data.map(d=>d.prot),1);
   const scoreDays=data.filter(d=>d.score!=null);
   const avgScore=scoreDays.length?(scoreDays.reduce((a,d)=>a+d.score,0)/scoreDays.length).toFixed(1):"—";
   const avgProt=Math.round(data.reduce((a,d)=>a+d.prot,0)/Math.max(data.length,1));
-  const targetPerWeek=3;
-  const weeksInPeriod=period==="week"?1:period==="month"?4:52;
+  const targetPerWeek=3,weeksInPeriod=period==="week"?1:period==="month"?4:52;
   const targetTotal=targetPerWeek*weeksInPeriod;
   const totalWorkouts=period==="year"?data.reduce((a,d)=>a+(d.workouts||0),0):data.filter(d=>d.workout).length;
   const volumePct=Math.min(100,Math.round((totalWorkouts/targetTotal)*100));
   const volumeColor=totalWorkouts>=targetTotal?G.sage:totalWorkouts>=targetTotal*0.7?G.gold:G.red;
   const coherenceDays=Object.values(days).filter(d=>d.workout?.coherence_score);
   const avgCoherence=coherenceDays.length?(coherenceDays.reduce((a,d)=>a+(d.workout.coherence_score||0),0)/coherenceDays.length).toFixed(1):null;
-
   let currentStreak=0;const sd=new Date();
   while(true){const k=getKey(sd);const day=days[k];const has=day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);if(!has)break;currentStreak++;sd.setDate(sd.getDate()-1);}
   const allDates=Object.keys(days).filter(k=>k!=="perfil").sort();
   let maxStreak=0,tempStreak=0;
   for(let i=0;i<allDates.length;i++){const day=days[allDates[i]];const has=day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);if(has){tempStreak++;maxStreak=Math.max(maxStreak,tempStreak);}else{tempStreak=0;}}
   const calDays=Array.from({length:30},(_,i)=>{const d=new Date();d.setDate(d.getDate()-29+i);const day=days[getKey(d)];return day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);});
-
+  const gap=period==="month"?1:3;
   const PeriodBtn=({id,label})=>(
     <button onClick={()=>setPeriod(id)} style={{padding:"6px 14px",borderRadius:99,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:11,fontWeight:period===id?600:400,background:period===id?"rgba(90,122,84,0.2)":"transparent",color:period===id?G.sage:G.hint}}>{label}</button>
   );
-
-  const gap=period==="month"?1:3;
-
   return(
     <div>
       <div style={{...glassSubtle,display:"flex",justifyContent:"center",gap:4,padding:"4px",borderRadius:99,marginBottom:16}}>
@@ -309,8 +309,6 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
         <PeriodBtn id="month" label="Mes"/>
         <PeriodBtn id="year" label="Año"/>
       </div>
-
-      {/* Gráfico combinado */}
       <div style={{...glassCard,padding:20,marginBottom:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
           <p style={{margin:0,fontSize:13,fontWeight:500,color:G.text}}>Proteína & Puntaje</p>
@@ -319,46 +317,32 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
             <span>Prot <strong style={{color:G.gold}}>{avgProt}g</strong></span>
           </div>
         </div>
-
-        {/* Barras proteína */}
-        {/* Barras proteína */}
-<div style={{display:"flex",alignItems:"flex-end",height:60,gap}}>
-  {data.map(d=>{
-    const h=d.prot?Math.round((d.prot/maxProt)*56):2;
-    return <div key={d.key} style={{flex:1,height:h,background:G.goldLight,borderTop:`2px solid ${G.gold}`,borderRadius:"3px 3px 0 0",alignSelf:"flex-end"}}/>;
-  })}
-</div>
-
-{/* Etiquetas días */}
-<div style={{display:"flex",gap,marginTop:4}}>
-  {data.map((d,i)=>(
-    (period==="week"||period==="year"||(period==="month"&&i%5===0))
-      ? <div key={d.key} style={{flex:1,textAlign:"center"}}><span style={{fontSize:9,color:G.hint}}>{d.label}</span></div>
-      : <div key={d.key} style={{flex:1}}/>
-  ))}
-</div>
-
-{/* Divisor */}
-<div style={{height:"1px",background:"rgba(255,255,255,0.35)",margin:"6px 0"}}/>
-
-{/* Puntajes */}
-<div style={{display:"flex",gap,marginBottom:8}}>
-  {data.map(d=>(
-    <div key={d.key} style={{flex:1,textAlign:"center"}}>
-      <span style={{fontSize:11,fontWeight:700,color:G.sage}}>
-        {d.score!=null?d.score:"·"}
-      </span>
-    </div>
-  ))}
-</div>
-        {/* Leyenda */}
-        <div style={{display:"flex",gap:16,marginTop:20,fontSize:11,color:G.hint}}>
+        <div style={{display:"flex",alignItems:"flex-end",height:60,gap}}>
+          {data.map(d=>{
+            const h=d.prot?Math.round((d.prot/maxProt)*56):2;
+            return <div key={d.key} style={{flex:1,height:h,background:G.goldLight,borderTop:`2px solid ${G.gold}`,borderRadius:"3px 3px 0 0",alignSelf:"flex-end"}}/>;
+          })}
+        </div>
+        <div style={{display:"flex",gap,marginTop:4}}>
+          {data.map((d,i)=>(
+            (period==="week"||period==="year"||(period==="month"&&i%5===0))
+              ?<div key={d.key} style={{flex:1,textAlign:"center"}}><span style={{fontSize:9,color:G.hint}}>{d.label}</span></div>
+              :<div key={d.key} style={{flex:1}}/>
+          ))}
+        </div>
+        <div style={{height:"1px",background:"rgba(255,255,255,0.35)",margin:"6px 0"}}/>
+        <div style={{display:"flex",gap,marginBottom:8}}>
+          {data.map(d=>(
+            <div key={d.key} style={{flex:1,textAlign:"center"}}>
+              <span style={{fontSize:11,fontWeight:700,color:G.sage}}>{d.score!=null?d.score:"·"}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:16,marginTop:16,fontSize:11,color:G.hint}}>
           <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:12,height:8,background:G.goldLight,border:`1px solid ${G.gold}`,borderRadius:2,display:"inline-block"}}/>Proteína (g)</span>
-          <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:14,height:14,borderRadius:"50%",background:G.sage,display:"inline-block"}}/>Puntaje</span>
+          <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:11,fontWeight:700,color:G.sage}}>7</span><span style={{marginLeft:4}}>Puntaje</span></span>
         </div>
       </div>
-
-      {/* Volumen */}
       <div style={{...glassCard,padding:20,marginBottom:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
           <p style={{margin:0,fontSize:13,fontWeight:500,color:G.text}}>Volumen de entrenamiento</p>
@@ -368,10 +352,7 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
           <div style={{position:"relative",width:72,height:72,flexShrink:0}}>
             <svg width="72" height="72" style={{transform:"rotate(-90deg)"}}>
               <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="6"/>
-              <circle cx="36" cy="36" r="30" fill="none" stroke={volumeColor} strokeWidth="6"
-                strokeDasharray={`${2*Math.PI*30}`}
-                strokeDashoffset={`${2*Math.PI*30*(1-volumePct/100)}`}
-                strokeLinecap="round" opacity="0.85"/>
+              <circle cx="36" cy="36" r="30" fill="none" stroke={volumeColor} strokeWidth="6" strokeDasharray={`${2*Math.PI*30}`} strokeDashoffset={`${2*Math.PI*30*(1-volumePct/100)}`} strokeLinecap="round" opacity="0.85"/>
             </svg>
             <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
               <span style={{fontSize:18,fontWeight:600,color:volumeColor,lineHeight:1}}>{totalWorkouts}</span>
@@ -379,34 +360,23 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
             </div>
           </div>
           <div style={{flex:1}}>
-            <p style={{margin:"0 0 4px",fontSize:13,color:volumeColor,fontWeight:600}}>
-              {totalWorkouts>=targetTotal?"✓ Meta cumplida":totalWorkouts>=targetTotal*0.7?"Casi llegás":"Por debajo de la meta"}
-            </p>
+            <p style={{margin:"0 0 4px",fontSize:13,color:volumeColor,fontWeight:600}}>{totalWorkouts>=targetTotal?"✓ Meta cumplida":totalWorkouts>=targetTotal*0.7?"Casi llegás":"Por debajo de la meta"}</p>
             <p style={{margin:0,fontSize:11,color:G.hint}}>{period==="week"?"Esta semana":period==="month"?"Último mes":"Este año"} · {totalWorkouts} sesión{totalWorkouts!==1?"es":""}</p>
           </div>
         </div>
       </div>
-
-      {/* Coherencia */}
       <div style={{...glassCard,padding:20,marginBottom:12}}>
         <p style={{margin:"0 0 12px",fontSize:13,fontWeight:500,color:G.text}}>Coherencia nutrición-entreno</p>
         {avgCoherence?(
           <div style={{display:"flex",alignItems:"center",gap:16}}>
-            <div style={{textAlign:"center"}}>
-              <p style={{margin:0,fontSize:36,fontWeight:300,color:G.sage,lineHeight:1}}>{avgCoherence}</p>
-              <p style={{margin:"4px 0 0",fontSize:10,color:G.hint}}>promedio</p>
-            </div>
+            <div style={{textAlign:"center"}}><p style={{margin:0,fontSize:36,fontWeight:300,color:G.sage,lineHeight:1}}>{avgCoherence}</p><p style={{margin:"4px 0 0",fontSize:10,color:G.hint}}>promedio</p></div>
             <div style={{flex:1}}>
-              <div style={{background:"rgba(255,255,255,0.3)",borderRadius:99,height:6,overflow:"hidden",marginBottom:8}}>
-                <div style={{width:`${(avgCoherence/10)*100}%`,background:G.sage,height:"100%",borderRadius:99,opacity:0.8}}/>
-              </div>
+              <div style={{background:"rgba(255,255,255,0.3)",borderRadius:99,height:6,overflow:"hidden",marginBottom:8}}><div style={{width:`${(avgCoherence/10)*100}%`,background:G.sage,height:"100%",borderRadius:99,opacity:0.8}}/></div>
               <p style={{margin:0,fontSize:11,color:G.hint}}>{avgCoherence>=8?"Excelente sincronía entre lo que comés y entrenás":avgCoherence>=6?"Buena coherencia, hay margen para mejorar":"Revisá la relación entre tus comidas y entrenamientos"}</p>
             </div>
           </div>
         ):<p style={{margin:0,fontSize:12,color:G.hint,fontStyle:"italic"}}>Registrá entrenamientos para ver este índice.</p>}
       </div>
-
-      {/* Racha */}
       <div style={{...glassCard,padding:20,marginBottom:12}}>
         <p style={{margin:"0 0 12px",fontSize:13,fontWeight:500,color:G.text}}>Racha de consistencia</p>
         <div style={{display:"flex",gap:20,marginBottom:16}}>
@@ -414,20 +384,14 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
           <div style={{width:"1px",background:"rgba(255,255,255,0.3)"}}/>
           <div style={{textAlign:"center"}}><p style={{margin:0,fontSize:32,fontWeight:300,color:G.gold,lineHeight:1}}>{maxStreak}</p><p style={{margin:"4px 0 0",fontSize:10,color:G.hint}}>récord</p></div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(10,1fr)",gap:4}}>
-          {calDays.map((active,i)=><div key={i} style={{height:16,borderRadius:3,background:active?"rgba(90,122,84,0.6)":"rgba(255,255,255,0.15)"}}/>)}
-        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(10,1fr)",gap:4}}>{calDays.map((active,i)=><div key={i} style={{height:16,borderRadius:3,background:active?"rgba(90,122,84,0.6)":"rgba(255,255,255,0.15)"}}/>)}</div>
         <p style={{margin:"6px 0 0",fontSize:10,color:G.hint}}>Últimos 30 días — verde = día activo</p>
       </div>
-
       <Btn onClick={fetchWeekSummary} loading={weekSummaryLoading} full>Resumen semanal con IA</Btn>
       {weekSummary&&(
         <div style={{...glassCard,padding:20,marginTop:12}}>
           {[["Mejor día",G.sage,weekSummary.best_day],["Peor día",G.red,weekSummary.worst_day],["Logro",G.text,weekSummary.achievement],["Próximo desafío",G.text,weekSummary.challenge]].map(([k,c,v])=>(
-            <div key={k} style={{marginBottom:12}}>
-              <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>{k.toUpperCase()}</p>
-              <p style={{margin:0,fontSize:13,color:c,fontWeight:500}}>{v}</p>
-            </div>
+            <div key={k} style={{marginBottom:12}}><p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>{k.toUpperCase()}</p><p style={{margin:0,fontSize:13,color:c,fontWeight:500}}>{v}</p></div>
           ))}
           <div style={{background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:10,padding:"12px 14px",marginTop:4,color:G.sage,fontSize:12,fontStyle:"italic"}}>{weekSummary.motivation}</div>
         </div>
@@ -479,40 +443,35 @@ export default function App(){
     setStreak(s);lsSave("nq_streak",s);
   };
 
-  useEffect(()=>{if(streak>=3)unlockBadge("streak_3");if(streak>=7){unlockBadge("streak_7");unlockBadge("week_complete");}},[streak,unlockBadge]);
   const handleMoveDate=async(slotId,targetDate,isMeal=true,snackIndex=null)=>{
-  const handleDeleteMeal=async(slotId)=>{
-  const fromDay=days[today]||{meals:{},snacks:[],workout:null};
-  const newMeals={...fromDay.meals};
-  delete newMeals[slotId];
-  await updateToday({meals:newMeals});
-};
+    const fromDay=days[today]||{meals:{},snacks:[],workout:null};
+    const toDay=days[targetDate]||{meals:{},snacks:[],workout:null};
+    if(isMeal){
+      const meal=fromDay.meals[slotId];if(!meal)return;
+      const newFromMeals={...fromDay.meals};delete newFromMeals[slotId];
+      await saveDay(today,{...fromDay,meals:newFromMeals});
+      await saveDay(targetDate,{...toDay,meals:{...toDay.meals,[slotId]:meal}});
+    }else{
+      const snack=(fromDay.snacks||[])[snackIndex];if(!snack)return;
+      await saveDay(today,{...fromDay,snacks:(fromDay.snacks||[]).filter((_,i)=>i!==snackIndex)});
+      await saveDay(targetDate,{...toDay,snacks:[...(toDay.snacks||[]),snack]});
+    }
+    const[,d]=await Promise.all([loadPerfil(),loadAllDays()]);
+    setDays(d);
+  };
 
-const handleDeleteSnack=async(index)=>{
-  const fromDay=days[today]||{meals:{},snacks:[],workout:null};
-  const newSnacks=(fromDay.snacks||[]).filter((_,i)=>i!==index);
-  await updateToday({snacks:newSnacks});
-};
-  const fromDay=days[today]||{meals:{},snacks:[],workout:null};
-  const toDay=days[targetDate]||{meals:{},snacks:[],workout:null};
-  if(isMeal){
-    const meal=fromDay.meals[slotId];
-    if(!meal)return;
-    const newFromMeals={...fromDay.meals};delete newFromMeals[slotId];
-    const newToMeals={...toDay.meals,[slotId]:meal};
-    await saveDay(today,{...fromDay,meals:newFromMeals});
-    await saveDay(targetDate,{...toDay,meals:newToMeals});
-  } else {
-    const snack=(fromDay.snacks||[])[snackIndex];
-    if(!snack)return;
-    const newFromSnacks=(fromDay.snacks||[]).filter((_,i)=>i!==snackIndex);
-    const newToSnacks=[...(toDay.snacks||[]),snack];
-    await saveDay(today,{...fromDay,snacks:newFromSnacks});
-    await saveDay(targetDate,{...toDay,snacks:newToSnacks});
-  }
-  const[p,d]=await Promise.all([loadPerfil(),loadAllDays()]);
-  setProfile(p);setDays(d);
-};
+  const handleDeleteMeal=async(slotId)=>{
+    const newMeals={...todayData.meals};
+    delete newMeals[slotId];
+    await updateToday({meals:newMeals});
+  };
+
+  const handleDeleteSnack=async(index)=>{
+    const newSnacks=(todayData.snacks||[]).filter((_,i)=>i!==index);
+    await updateToday({snacks:newSnacks});
+  };
+
+  useEffect(()=>{if(streak>=3)unlockBadge("streak_3");if(streak>=7){unlockBadge("streak_7");unlockBadge("week_complete");}},[streak,unlockBadge]);
   const triggerConfetti=()=>{setConfetti(true);setTimeout(()=>setConfetti(false),2000);};
 
   const handleMealSubmit=async(slotId,label)=>{
@@ -608,7 +567,16 @@ const handleDeleteSnack=async(index)=>{
           <div style={{...glassCard,overflow:"hidden",marginBottom:16}}>
             {FIXED_SLOTS.map((slot,i)=>(
               <div key={slot.id}>
-                <MealSlot slot={slot} meal={todayData.meals?.[slot.id]} input={mealInputs[slot.id]||""} onInput={v=>setMealInputs(x=>({...x,[slot.id]:v}))} loading={mealLoading[slot.id]} onSubmit={()=>handleMealSubmit(slot.id,slot.label)} onMoveDate={(date)=>handleMoveDate(slot.id,date,true)} onDelete={()=>handleDeleteMeal(slot.id)}/>
+                <MealSlot
+                  slot={slot}
+                  meal={todayData.meals?.[slot.id]}
+                  input={mealInputs[slot.id]||""}
+                  onInput={v=>setMealInputs(x=>({...x,[slot.id]:v}))}
+                  loading={mealLoading[slot.id]}
+                  onSubmit={()=>handleMealSubmit(slot.id,slot.label)}
+                  onMoveDate={(date)=>handleMoveDate(slot.id,date,true)}
+                  onDelete={()=>handleDeleteMeal(slot.id)}
+                />
                 {i<FIXED_SLOTS.length-1&&<Divider/>}
               </div>
             ))}
