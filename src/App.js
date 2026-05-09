@@ -5,10 +5,8 @@ const supabase = createClient(
   "https://pbxxevlzcezkmeyxsydn.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBieHhldmx6Y2V6a21leXhzeWRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNTI5MzcsImV4cCI6MjA5MzcyODkzN30.tsC-3kM9orTRdCPip84GdctDlXSSaOmv8UquELx-bR4"
 );
-
-const USER_ID = "gabo";
-
-const G = {
+const USER_ID="gabo";
+const G={
   glass:"rgba(255,255,255,0.55)",glassDark:"rgba(255,255,255,0.35)",glassSubtle:"rgba(255,255,255,0.25)",
   border:"rgba(255,255,255,0.6)",borderSubtle:"rgba(255,255,255,0.35)",
   text:"#2a3428",muted:"#5a6b57",hint:"#93a48f",
@@ -17,7 +15,6 @@ const G = {
   bg1:"#c8d8c4",bg2:"#e8e0d0",bg3:"#d4cabb",
 };
 const blur="blur(14px)",blurSm="blur(8px)";
-
 const LEVELS=[
   {name:"Novato",emoji:"🌱",xp:0},{name:"Aprendiz",emoji:"🌿",xp:200},
   {name:"Consciente",emoji:"🍃",xp:500},{name:"Atleta",emoji:"🌾",xp:1000},{name:"Leyenda",emoji:"🌳",xp:2000},
@@ -37,7 +34,6 @@ const FIXED_SLOTS=[
   {id:"snack",label:"Merienda",emoji:"☕"},{id:"dinner",label:"Cena",emoji:"🌙"},
 ];
 const WORKOUT_TYPES=["Fuerza/hipertrofia","Cardio","Funcional/HIIT","Movilidad","Deporte"];
-
 const todayStr=()=>new Date().toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
 
 async function loadAllDays(){
@@ -64,15 +60,10 @@ async function saveDay(fecha,dayData){
     meals:dayData.meals||{},snacks:dayData.snacks||[],workout:dayData.workout||null,
   },{onConflict:"user_id,fecha"});
 }
-
 const lsLoad=(k,def)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch{return def;}};
 const lsSave=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
-
 async function callAI(prompt,system){
-  const res=await fetch("/api/analyze",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({prompt,system}),
-  });
+  const res=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt,system})});
   const data=await res.json();
   const text=data.content?.find(b=>b.type==="text")?.text||"";
   return JSON.parse(text.replace(/```json|```/g,"").trim());
@@ -90,7 +81,6 @@ function Tag({color,bg,border,children}){
   return <span style={{fontSize:11,background:bg||G.sageLight,color:color||G.sage,border:`1px solid ${border||G.sageBorder}`,padding:"3px 9px",borderRadius:99,fontWeight:500,letterSpacing:"0.02em"}}>{children}</span>;
 }
 function Divider(){return <div style={{height:"1px",background:"rgba(255,255,255,0.4)",margin:"0 18px"}}/>;}
-
 function Confetti({active}){
   if(!active)return null;
   const pieces=Array.from({length:22},(_,i)=>({id:i,left:Math.random()*100,color:[G.sage,G.sageMid,G.gold,"#c8b89a","#8fad8b"][i%5],delay:Math.random()*0.4,size:5+Math.random()*6}));
@@ -177,11 +167,7 @@ function ProfileSetup({onSave}){
   const valid=form.name&&+form.weight>0&&+form.height>0;
   const bmi=form.weight&&form.height?(+form.weight/((+form.height/100)**2)).toFixed(1):null;
   const prot=form.weight?Math.round(+form.weight*2):null;
-  const handleSave=async()=>{
-    setSaving(true);
-    const perfil={name:form.name,weight:+form.weight,height:+form.height};
-    await savePerfil(perfil);onSave(perfil);setSaving(false);
-  };
+  const handleSave=async()=>{setSaving(true);const perfil={name:form.name,weight:+form.weight,height:+form.height};await savePerfil(perfil);onSave(perfil);setSaving(false);};
   return(
     <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
       <div style={{...glassCard,padding:32,maxWidth:360,width:"100%"}}>
@@ -211,7 +197,6 @@ function ProfileSetup({onSave}){
   );
 }
 
-// ── MetricsTab ─────────────────────────────────────────────────────────────
 function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRanking,setShowRanking}){
   const[period,setPeriod]=useState("week");
   const getKey=d=>d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
@@ -220,8 +205,7 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
     if(period==="week"){
       return Array.from({length:7},(_,i)=>{
         const d=new Date();d.setDate(d.getDate()-6+i);
-        const k=getKey(d);
-        const day=days[k]||{};
+        const k=getKey(d);const day=days[k]||{};
         const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];
         const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:null;
         return{key:k,label:d.toLocaleDateString("es",{weekday:"short"}),score:score!=null?Math.round(score*10)/10:null,prot:Math.round(allM.reduce((a,m)=>a+(m.protein_g||0),0)),workout:day.workout};
@@ -230,8 +214,7 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
     if(period==="month"){
       return Array.from({length:30},(_,i)=>{
         const d=new Date();d.setDate(d.getDate()-29+i);
-        const k=getKey(d);
-        const day=days[k]||{};
+        const k=getKey(d);const day=days[k]||{};
         const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];
         const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:null;
         return{key:k,label:d.getDate().toString(),score:score!=null?Math.round(score*10)/10:null,prot:Math.round(allM.reduce((a,m)=>a+(m.protein_g||0),0)),workout:day.workout};
@@ -253,50 +236,27 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
   const scoreDays=data.filter(d=>d.score!=null);
   const avgScore=scoreDays.length?(scoreDays.reduce((a,d)=>a+d.score,0)/scoreDays.length).toFixed(1):"—";
   const avgProt=Math.round(data.reduce((a,d)=>a+d.prot,0)/Math.max(data.length,1));
-
   const targetPerWeek=3;
   const weeksInPeriod=period==="week"?1:period==="month"?4:52;
   const targetTotal=targetPerWeek*weeksInPeriod;
   const totalWorkouts=period==="year"?data.reduce((a,d)=>a+(d.workouts||0),0):data.filter(d=>d.workout).length;
   const volumePct=Math.min(100,Math.round((totalWorkouts/targetTotal)*100));
   const volumeColor=totalWorkouts>=targetTotal?G.sage:totalWorkouts>=targetTotal*0.7?G.gold:G.red;
-
   const coherenceDays=Object.values(days).filter(d=>d.workout?.coherence_score);
   const avgCoherence=coherenceDays.length?(coherenceDays.reduce((a,d)=>a+(d.workout.coherence_score||0),0)/coherenceDays.length).toFixed(1):null;
 
   let currentStreak=0;const sd=new Date();
-  while(true){
-    const k=getKey(sd);const day=days[k];
-    const has=day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);
-    if(!has)break;
-    currentStreak++;sd.setDate(sd.getDate()-1);
-  }
+  while(true){const k=getKey(sd);const day=days[k];const has=day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);if(!has)break;currentStreak++;sd.setDate(sd.getDate()-1);}
   const allDates=Object.keys(days).filter(k=>k!=="perfil").sort();
   let maxStreak=0,tempStreak=0;
-  for(let i=0;i<allDates.length;i++){
-    const day=days[allDates[i]];
-    const has=day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);
-    if(has){tempStreak++;maxStreak=Math.max(maxStreak,tempStreak);}else{tempStreak=0;}
-  }
-  const calDays=Array.from({length:30},(_,i)=>{
-    const d=new Date();d.setDate(d.getDate()-29+i);
-    const day=days[getKey(d)];
-    return day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);
-  });
-
-  // Gráfico SVG — coordenadas numéricas absolutas
-  const W=300,H=80;
-  const barW=W/data.length;
-  const linePoints=data.map((d,i)=>({
-    x:(i+0.5)*barW,
-    y:d.score!=null?H-(d.score/10)*H*0.95:null,
-    score:d.score,
-  }));
-  const validLine=linePoints.filter(p=>p.y!=null);
+  for(let i=0;i<allDates.length;i++){const day=days[allDates[i]];const has=day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);if(has){tempStreak++;maxStreak=Math.max(maxStreak,tempStreak);}else{tempStreak=0;}}
+  const calDays=Array.from({length:30},(_,i)=>{const d=new Date();d.setDate(d.getDate()-29+i);const day=days[getKey(d)];return day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);});
 
   const PeriodBtn=({id,label})=>(
     <button onClick={()=>setPeriod(id)} style={{padding:"6px 14px",borderRadius:99,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:11,fontWeight:period===id?600:400,background:period===id?"rgba(90,122,84,0.2)":"transparent",color:period===id?G.sage:G.hint}}>{label}</button>
   );
+
+  const gap=period==="month"?1:3;
 
   return(
     <div>
@@ -307,65 +267,74 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
       </div>
 
       {/* Gráfico combinado */}
-<div style={{...glassCard,padding:20,marginBottom:12}}>
-  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-    <p style={{margin:0,fontSize:13,fontWeight:500,color:G.text}}>Proteína & Puntaje</p>
-    <div style={{display:"flex",gap:12,fontSize:11,color:G.hint}}>
-      <span>Score <strong style={{color:G.sage}}>{avgScore}</strong></span>
-      <span>Prot <strong style={{color:G.gold}}>{avgProt}g</strong></span>
-    </div>
-  </div>
-  {/* Barras doradas proteína */}
-<div style={{display:"flex",alignItems:"flex-end",height:60,gap:period==="month"?1:3}}>
-  {data.map(d=>{
-    const h=d.prot?Math.round((d.prot/maxProt)*56):2;
-    return <div key={d.key} style={{flex:1,height:h,background:G.goldLight,borderTop:`2px solid ${G.gold}`,borderRadius:"3px 3px 0 0",alignSelf:"flex-end"}}/>;
-  })}
-</div>
-{/* Etiquetas días */}
-<div style={{display:"flex",gap:period==="month"?1:3,marginBottom:12,marginTop:4}}>
-  {data.map((d,i)=>(
-    (period==="week"||period==="year"||(period==="month"&&i%5===0))
-      ?<div key={d.key} style={{flex:1,textAlign:"center"}}><span style={{fontSize:9,color:G.hint}}>{d.label}</span></div>
-      :<div key={d.key} style={{flex:1}}/>
-  ))}
-</div>
-{/* Línea + círculos puntaje */}
-<div style={{position:"relative",height:60,marginBottom:8}}>
-  <svg style={{position:"absolute",top:0,left:0,width:"100%",height:"100%"}}>
-    {data.map((d,i)=>{
-      if(i===0||d.score==null||data[i-1].score==null)return null;
-      const x1=((i-0.5)/data.length)*100;
-      const x2=((i+0.5)/data.length)*100;
-      const y1=60-((data[i-1].score||0)/10)*50;
-      const y2=60-(d.score/10)*50;
-      return <line key={i} x1={`${x1}%`} y1={y1} x2={`${x2}%`} y2={y2} stroke={G.sage} strokeWidth="2.5" opacity="0.8"/>;
-    })}
-  </svg>
-  <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",display:"flex"}}>
-    {data.map((d,i)=>{
-      const top=d.score!=null?60-(d.score/10)*50-12:null;
-      return(
-        <div key={d.key} style={{flex:1,position:"relative",display:"flex",justifyContent:"center"}}>
-          {d.score!=null&&(
-            <div style={{
-              position:"absolute",top,
-              width:24,height:24,borderRadius:"50%",
-              background:G.sage,
-              display:"flex",alignItems:"center",justifyContent:"center",
-              fontSize:9,fontWeight:700,color:"#fff",
-              boxShadow:"0 2px 6px rgba(90,122,84,0.35)",
-            }}>{d.score}</div>
-          )}
+      <div style={{...glassCard,padding:20,marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+          <p style={{margin:0,fontSize:13,fontWeight:500,color:G.text}}>Proteína & Puntaje</p>
+          <div style={{display:"flex",gap:12,fontSize:11,color:G.hint}}>
+            <span>Score <strong style={{color:G.sage}}>{avgScore}</strong></span>
+            <span>Prot <strong style={{color:G.gold}}>{avgProt}g</strong></span>
+          </div>
         </div>
-      );
-    })}
-  </div>
-</div>
-<div style={{display:"flex",gap:16,marginTop:4,fontSize:11,color:G.hint}}>
-  <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:12,height:8,background:G.goldLight,border:`1px solid ${G.gold}`,borderRadius:2,display:"inline-block"}}/>Proteína (g)</span>
-  <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:14,height:14,borderRadius:"50%",background:G.sage,display:"inline-block"}}/>Puntaje</span>
-</div>
+
+        {/* Barras proteína */}
+        <div style={{display:"flex",alignItems:"flex-end",height:60,gap}}>
+          {data.map(d=>{
+            const h=d.prot?Math.round((d.prot/maxProt)*56):2;
+            return <div key={d.key} style={{flex:1,height:h,background:G.goldLight,borderTop:`2px solid ${G.gold}`,borderRadius:"3px 3px 0 0",alignSelf:"flex-end"}}/>;
+          })}
+        </div>
+
+        {/* Etiquetas días */}
+        <div style={{display:"flex",gap,marginTop:4,marginBottom:16}}>
+          {data.map((d,i)=>(
+            (period==="week"||period==="year"||(period==="month"&&i%5===0))
+              ? <div key={d.key} style={{flex:1,textAlign:"center"}}><span style={{fontSize:9,color:G.hint}}>{d.label}</span></div>
+              : <div key={d.key} style={{flex:1}}/>
+          ))}
+        </div>
+
+        {/* Línea de puntaje con círculos */}
+        <div style={{position:"relative",height:70}}>
+          {/* Líneas de conexión */}
+          <svg style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",overflow:"visible"}}>
+            {data.map((d,i)=>{
+              if(i===0||d.score==null||data[i-1].score==null)return null;
+              const total=data.length;
+              const x1=`${((i-1+0.5)/total)*100}%`;
+              const x2=`${((i+0.5)/total)*100}%`;
+              const y1=70-((data[i-1].score/10)*56);
+              const y2=70-((d.score/10)*56);
+              return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={G.sage} strokeWidth="2" opacity="0.7"/>;
+            })}
+          </svg>
+          {/* Círculos con puntaje */}
+          <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",display:"flex"}}>
+            {data.map(d=>{
+              if(d.score==null)return <div key={d.key} style={{flex:1}}/>;
+              const top=70-((d.score/10)*56)-12;
+              return(
+                <div key={d.key} style={{flex:1,position:"relative",display:"flex",justifyContent:"center"}}>
+                  <div style={{
+                    position:"absolute",
+                    top:Math.max(0,top),
+                    width:24,height:24,borderRadius:"50%",
+                    background:G.sage,
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    fontSize:9,fontWeight:700,color:"#fff",
+                    boxShadow:"0 2px 6px rgba(90,122,84,0.35)",
+                  }}>{d.score}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Leyenda */}
+        <div style={{display:"flex",gap:16,marginTop:8,fontSize:11,color:G.hint}}>
+          <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:12,height:8,background:G.goldLight,border:`1px solid ${G.gold}`,borderRadius:2,display:"inline-block"}}/>Proteína (g)</span>
+          <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:14,height:14,borderRadius:"50%",background:G.sage,display:"inline-block"}}/>Puntaje</span>
+        </div>
+      </div>
 
       {/* Volumen */}
       <div style={{...glassCard,padding:20,marginBottom:12}}>
@@ -419,15 +388,9 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
       <div style={{...glassCard,padding:20,marginBottom:12}}>
         <p style={{margin:"0 0 12px",fontSize:13,fontWeight:500,color:G.text}}>Racha de consistencia</p>
         <div style={{display:"flex",gap:20,marginBottom:16}}>
-          <div style={{textAlign:"center"}}>
-            <p style={{margin:0,fontSize:32,fontWeight:300,color:G.sage,lineHeight:1}}>{currentStreak}</p>
-            <p style={{margin:"4px 0 0",fontSize:10,color:G.hint}}>racha actual</p>
-          </div>
+          <div style={{textAlign:"center"}}><p style={{margin:0,fontSize:32,fontWeight:300,color:G.sage,lineHeight:1}}>{currentStreak}</p><p style={{margin:"4px 0 0",fontSize:10,color:G.hint}}>racha actual</p></div>
           <div style={{width:"1px",background:"rgba(255,255,255,0.3)"}}/>
-          <div style={{textAlign:"center"}}>
-            <p style={{margin:0,fontSize:32,fontWeight:300,color:G.gold,lineHeight:1}}>{maxStreak}</p>
-            <p style={{margin:"4px 0 0",fontSize:10,color:G.hint}}>récord</p>
-          </div>
+          <div style={{textAlign:"center"}}><p style={{margin:0,fontSize:32,fontWeight:300,color:G.gold,lineHeight:1}}>{maxStreak}</p><p style={{margin:"4px 0 0",fontSize:10,color:G.hint}}>récord</p></div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(10,1fr)",gap:4}}>
           {calDays.map((active,i)=><div key={i} style={{height:16,borderRadius:3,background:active?"rgba(90,122,84,0.6)":"rgba(255,255,255,0.15)"}}/>)}
@@ -453,7 +416,6 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
   );
 }
 
-// ── Main App ───────────────────────────────────────────────────────────────
 export default function App(){
   const[tab,setTab]=useState("today");
   const[profile,setProfile]=useState(null);
@@ -478,44 +440,14 @@ export default function App(){
   const today=todayStr();
   const todayData=days[today]||{meals:{},snacks:[],workout:null};
 
-  useEffect(()=>{
-    (async()=>{
-      setLoading(true);
-      const[p,d]=await Promise.all([loadPerfil(),loadAllDays()]);
-      setProfile(p);setDays(d);setLoading(false);
-    })();
-  },[]);
-
+  useEffect(()=>{(async()=>{setLoading(true);const[p,d]=await Promise.all([loadPerfil(),loadAllDays()]);setProfile(p);setDays(d);setLoading(false);})();},[]);
   useEffect(()=>{lsSave("nq_xp",xp);},[xp]);
   useEffect(()=>{lsSave("nq_badges",badges);},[badges]);
   useEffect(()=>{lsSave("nq_streak",streak);},[streak]);
 
-  const addToast=useCallback((badge)=>{
-    const id=Date.now();
-    setToasts(t=>[...t,{id,...badge}]);
-    setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)),4000);
-  },[]);
-
-  const unlockBadge=useCallback((id)=>{
-    setBadges(b=>{
-      if(b.includes(id))return b;
-      const def=BADGES_DEF.find(x=>x.id===id);
-      if(def)addToast({emoji:def.emoji,title:def.name,desc:def.desc});
-      return[...b,id];
-    });
-  },[addToast]);
-
-  const calcStreak=useCallback((daysMap)=>{
-    let s=0;const d=new Date();
-    while(true){
-      const k=d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
-      const day=daysMap[k];
-      const has=day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0);
-      if(!has)break;
-      s++;d.setDate(d.getDate()-1);
-    }
-    return s;
-  },[]);
+  const addToast=useCallback((badge)=>{const id=Date.now();setToasts(t=>[...t,{id,...badge}]);setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)),4000);},[]);
+  const unlockBadge=useCallback((id)=>{setBadges(b=>{if(b.includes(id))return b;const def=BADGES_DEF.find(x=>x.id===id);if(def)addToast({emoji:def.emoji,title:def.name,desc:def.desc});return[...b,id];});},[addToast]);
+  const calcStreak=useCallback((daysMap)=>{let s=0;const d=new Date();while(true){const k=d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});const day=daysMap[k];const has=day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0);if(!has)break;s++;d.setDate(d.getDate()-1);}return s;},[]);
 
   const updateToday=async(patch)=>{
     const updated={...todayData,...patch};
@@ -525,27 +457,18 @@ export default function App(){
     setStreak(s);lsSave("nq_streak",s);
   };
 
-  useEffect(()=>{
-    if(streak>=3)unlockBadge("streak_3");
-    if(streak>=7){unlockBadge("streak_7");unlockBadge("week_complete");}
-  },[streak,unlockBadge]);
-
+  useEffect(()=>{if(streak>=3)unlockBadge("streak_3");if(streak>=7){unlockBadge("streak_7");unlockBadge("week_complete");}},[streak,unlockBadge]);
   const triggerConfetti=()=>{setConfetti(true);setTimeout(()=>setConfetti(false),2000);};
 
   const handleMealSubmit=async(slotId,label)=>{
-    const desc=mealInputs[slotId];
-    if(!desc?.trim())return;
+    const desc=mealInputs[slotId];if(!desc?.trim())return;
     setMealLoading(l=>({...l,[slotId]:true}));
     try{
-      const result=await callAI(
-        `Analiza esta comida: "${desc}". Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), hypertrophy ("excelente"|"bueno"|"moderado"|"bajo"), nutrients ([{name,benefit}] máx 4), tip (string breve).`,
-        "Eres un nutricionista experto. Responde SOLO con JSON válido, sin texto adicional."
-      );
+      const result=await callAI(`Analiza esta comida: "${desc}". Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), hypertrophy ("excelente"|"bueno"|"moderado"|"bajo"), nutrients ([{name,benefit}] máx 4), tip (string breve).`,"Eres un nutricionista experto. Responde SOLO con JSON válido, sin texto adicional.");
       const meal={desc,...result,slot:slotId,label,timestamp:Date.now()};
       const newMeals={...todayData.meals,[slotId]:meal};
       await updateToday({meals:newMeals});
-      setXp(x=>x+50+(result.score||0)*5);
-      triggerConfetti();
+      setXp(x=>x+50+(result.score||0)*5);triggerConfetti();
       if(Object.keys(newMeals).length===1&&Object.keys(days).length<=1)unlockBadge("first_meal");
       const dayProt=Object.values(newMeals).reduce((a,m)=>a+(m.protein_g||0),0)+(todayData.snacks||[]).reduce((a,s)=>a+(s.protein_g||0),0);
       if(profile&&dayProt>=profile.weight*2)unlockBadge("protein_goal");
@@ -557,18 +480,12 @@ export default function App(){
   };
 
   const handleSnackSubmit=async()=>{
-    const desc=mealInputs["snack_new"];
-    if(!desc?.trim()||!snackName?.trim())return;
+    const desc=mealInputs["snack_new"];if(!desc?.trim()||!snackName?.trim())return;
     setMealLoading(l=>({...l,snack_new:true}));
     try{
-      const result=await callAI(
-        `Analiza este tentempié "${snackName}": "${desc}". Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), hypertrophy ("excelente"|"bueno"|"moderado"|"bajo"), nutrients ([{name,benefit}] máx 4), tip (string breve).`,
-        "Eres un nutricionista experto. Responde SOLO con JSON válido."
-      );
-      const snack={desc,name:snackName,...result,timestamp:Date.now()};
-      await updateToday({snacks:[...(todayData.snacks||[]),snack]});
-      setXp(x=>x+40+(result.score||0)*3);
-      triggerConfetti();unlockBadge("first_meal");
+      const result=await callAI(`Analiza este tentempié "${snackName}": "${desc}". Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), hypertrophy ("excelente"|"bueno"|"moderado"|"bajo"), nutrients ([{name,benefit}] máx 4), tip (string breve).`,"Eres un nutricionista experto. Responde SOLO con JSON válido.");
+      await updateToday({snacks:[...(todayData.snacks||[]),{desc,name:snackName,...result,timestamp:Date.now()}]});
+      setXp(x=>x+40+(result.score||0)*3);triggerConfetti();unlockBadge("first_meal");
       setMealInputs(i=>({...i,snack_new:""}));setSnackName("");
     }catch{alert("Error al analizar el tentempié.");}
     setMealLoading(l=>({...l,snack_new:false}));
@@ -578,16 +495,10 @@ export default function App(){
     setWorkoutLoading(true);
     const mealsDesc=[...Object.values(todayData.meals||{}).map(m=>m.desc),...(todayData.snacks||[]).map(s=>s.desc)].join("; ");
     try{
-      const result=await callAI(
-        `Entreno: ${workoutForm.type}, ${workoutForm.duration}min, intensidad ${workoutForm.intensity}/5. Comidas hoy: "${mealsDesc}". SOLO JSON: coherence_score (1-10), balance (string), protein_ok (bool), strengths ([string]), suggestions ([string]).`,
-        "Eres un entrenador y nutricionista. Responde SOLO con JSON válido."
-      );
+      const result=await callAI(`Entreno: ${workoutForm.type}, ${workoutForm.duration}min, intensidad ${workoutForm.intensity}/5. Comidas hoy: "${mealsDesc}". SOLO JSON: coherence_score (1-10), balance (string), protein_ok (bool), strengths ([string]), suggestions ([string]).`,"Eres un entrenador y nutricionista. Responde SOLO con JSON válido.");
       await updateToday({workout:{...workoutForm,...result,timestamp:Date.now()}});
       setXp(x=>x+80);unlockBadge("first_workout");
-      const weekW=Object.entries(days).filter(([d,v])=>{
-        const diff=(new Date(today)-new Date(d))/86400000;
-        return diff>=0&&diff<7&&v?.workout;
-      }).length+1;
+      const weekW=Object.entries(days).filter(([d,v])=>{const diff=(new Date(today)-new Date(d))/86400000;return diff>=0&&diff<7&&v?.workout;}).length+1;
       if(weekW>=3)unlockBadge("athlete");
     }catch{alert("Error al analizar el entrenamiento.");}
     setWorkoutLoading(false);
@@ -598,37 +509,21 @@ export default function App(){
     const data7=Array.from({length:7},(_,i)=>{
       const d=new Date();d.setDate(d.getDate()-6+i);
       const k=d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
-      const day=days[k]||{};
-      const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];
+      const day=days[k]||{};const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];
       const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:0;
       return`${k}: score ${Math.round(score*10)/10}, prot ${Math.round(allM.reduce((a,m)=>a+(m.protein_g||0),0))}g`;
     }).join("; ");
-    try{
-      const r=await callAI(
-        `7 días de nutrición: ${data7}. SOLO JSON: best_day, worst_day, achievement (string), challenge (string), motivation (string).`,
-        "Eres un coach nutricional. Responde SOLO con JSON válido."
-      );
-      setWeekSummary(r);
-    }catch{alert("Error al generar el resumen.");}
+    try{const r=await callAI(`7 días de nutrición: ${data7}. SOLO JSON: best_day, worst_day, achievement (string), challenge (string), motivation (string).`,"Eres un coach nutricional. Responde SOLO con JSON válido.");setWeekSummary(r);}
+    catch{alert("Error al generar el resumen.");}
     setWeekSummaryLoading(false);
   };
 
-  if(loading)return(
-    <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <div style={{textAlign:"center",color:G.muted}}>
-        <div style={{fontSize:40,marginBottom:12}}>🌿</div>
-        <p style={{fontSize:14,letterSpacing:"0.04em"}}>Cargando…</p>
-      </div>
-    </div>
-  );
+  if(loading)return <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center",color:G.muted}}><div style={{fontSize:40,marginBottom:12}}>🌿</div><p style={{fontSize:14,letterSpacing:"0.04em"}}>Cargando…</p></div></div>;
   if(!profile)return <ProfileSetup onSave={setProfile}/>;
 
   const proteinGoal=Math.round(profile.weight*2);
   const todayProt=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.protein_g||0),0);
-  const TABS=[
-    {id:"today",label:"Hoy"},{id:"workout",label:"Entreno"},
-    {id:"history",label:"Historial"},{id:"metrics",label:"Métricas"},{id:"badges",label:"Badges"},
-  ];
+  const TABS=[{id:"today",label:"Hoy"},{id:"workout",label:"Entreno"},{id:"history",label:"Historial"},{id:"metrics",label:"Métricas"},{id:"badges",label:"Badges"}];
 
   return(
     <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1} 0%,${G.bg2} 50%,${G.bg3} 100%)`,color:G.text,padding:20,maxWidth:600,margin:"0 auto"}}>
@@ -636,9 +531,7 @@ export default function App(){
       <Toast toasts={toasts}/>
       <div style={{textAlign:"center",marginBottom:20}}>
         <h1 style={{margin:"0 0 2px",fontSize:18,fontWeight:300,color:G.text,letterSpacing:"0.02em"}}>🌿 NutriQuest</h1>
-        <p style={{margin:0,fontSize:11,color:G.hint,letterSpacing:"0.06em"}}>
-          {new Date().toLocaleDateString("es",{weekday:"long",day:"numeric",month:"long",timeZone:"America/Argentina/Buenos_Aires"})}
-        </p>
+        <p style={{margin:0,fontSize:11,color:G.hint,letterSpacing:"0.06em"}}>{new Date().toLocaleDateString("es",{weekday:"long",day:"numeric",month:"long",timeZone:"America/Argentina/Buenos_Aires"})}</p>
       </div>
       <ProfilePanel profile={profile} onUpdate={setProfile}/>
       <XPBar xp={xp} streak={streak}/>
@@ -652,9 +545,7 @@ export default function App(){
         </div>
       </div>
       <div style={{...glassSubtle,display:"flex",gap:0,marginBottom:20,overflow:"hidden",padding:4,borderRadius:14}}>
-        {TABS.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,padding:"8px 6px",background:tab===t.id?"rgba(255,255,255,0.6)":"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:tab===t.id?600:400,color:tab===t.id?G.sage:G.hint,borderRadius:10,transition:"all 0.2s",backdropFilter:tab===t.id?blurSm:"none",WebkitBackdropFilter:tab===t.id?blurSm:"none"}}>{t.label}</button>
-        ))}
+        {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,padding:"8px 6px",background:tab===t.id?"rgba(255,255,255,0.6)":"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:tab===t.id?600:400,color:tab===t.id?G.sage:G.hint,borderRadius:10,transition:"all 0.2s",backdropFilter:tab===t.id?blurSm:"none",WebkitBackdropFilter:tab===t.id?blurSm:"none"}}>{t.label}</button>)}
       </div>
 
       {tab==="today"&&(
@@ -752,12 +643,7 @@ export default function App(){
                     </div>
                   );
                 })}
-                {hDay.workout&&(
-                  <div style={{...glassCard,padding:"14px 18px"}}>
-                    <p style={{margin:"0 0 10px",fontWeight:500,fontSize:13}}>🏋️ {hDay.workout.type}</p>
-                    <WorkoutCard workout={hDay.workout} compact/>
-                  </div>
-                )}
+                {hDay.workout&&<div style={{...glassCard,padding:"14px 18px"}}><p style={{margin:"0 0 10px",fontWeight:500,fontSize:13}}>🏋️ {hDay.workout.type}</p><WorkoutCard workout={hDay.workout} compact/></div>}
               </div>
             );
           })()}
@@ -765,14 +651,7 @@ export default function App(){
       )}
 
       {tab==="metrics"&&(
-        <MetricsTab
-          days={days}
-          fetchWeekSummary={fetchWeekSummary}
-          weekSummaryLoading={weekSummaryLoading}
-          weekSummary={weekSummary}
-          showRanking={showRanking}
-          setShowRanking={setShowRanking}
-        />
+        <MetricsTab days={days} fetchWeekSummary={fetchWeekSummary} weekSummaryLoading={weekSummaryLoading} weekSummary={weekSummary} showRanking={showRanking} setShowRanking={setShowRanking}/>
       )}
 
       {tab==="badges"&&(
