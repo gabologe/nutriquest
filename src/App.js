@@ -99,17 +99,46 @@ function MealDetails({meal}){
   const hyC={excelente:G.sage,bueno:G.sageMid,moderado:G.gold,bajo:G.red};
   return <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(255,255,255,0.4)",fontSize:13}}><div style={{marginBottom:8}}><span style={{color:G.hint,fontSize:12}}>Hipertrofia — </span><span style={{color:hyC[meal.hypertrophy]||G.muted,fontWeight:600}}>{meal.hypertrophy}</span></div>{(meal.nutrients||[]).map((n,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:5}}><span style={{color:G.sage,fontWeight:600,minWidth:80,fontSize:12}}>{n.name}</span><span style={{color:G.muted,fontSize:12,lineHeight:1.4}}>{n.benefit}</span></div>)}{meal.tip&&<div style={{marginTop:10,background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:8,padding:"10px 12px",color:G.sage,fontSize:12,fontStyle:"italic"}}>💡 {meal.tip}</div>}</div>;
 }
-function MealCard({meal,onMoveDate,onDelete}){
+function EditMealModal({meal,onSave,onDelete,onClose}){
+  const[desc,setDesc]=useState(meal.desc||"");
+  const[date,setDate]=useState(todayStr());
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",backdropFilter:"blur(6px)",WebkitBackdropFilter:"blur(6px)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{...glassCard,padding:24,width:"100%",maxWidth:400}}>
+        <p style={{margin:"0 0 16px",fontSize:14,fontWeight:600,color:G.text}}>Editar comida</p>
+        <label style={lbl}>Descripción</label>
+        <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3} style={{...inp,resize:"vertical"}}/>
+        <label style={lbl}>Mover a fecha</label>
+        <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={inp}/>
+        <div style={{display:"flex",gap:8,marginTop:8}}>
+          <Btn onClick={()=>onSave(desc,date)} full>Guardar</Btn>
+          <Btn onClick={onClose}>Cancelar</Btn>
+        </div>
+        <button onClick={()=>{if(window.confirm("¿Eliminar esta comida?"))onDelete();}} style={{width:"100%",marginTop:12,padding:"10px",borderRadius:10,border:"1px solid rgba(180,80,80,0.3)",background:"rgba(180,80,80,0.08)",color:G.red,cursor:"pointer",fontSize:13,fontFamily:"inherit",fontWeight:500}}>
+          🗑️ Eliminar
+        </button>
+      </div>
+    </div>
+  );
+}
+function MealCard({meal,onMoveDate,onDelete,onSave}){
   const[exp,setExp]=useState(false);
-  const[moving,setMoving]=useState(false);
-  const[newDate,setNewDate]=useState("");
+  const[editing,setEditing]=useState(false);
   const skinC={beneficioso:G.sage,neutro:G.muted,inflamatorio:G.red};
   const skinBg={beneficioso:G.sageLight,neutro:"rgba(255,255,255,0.2)",inflamatorio:G.redLight};
   const skinBd={beneficioso:G.sageBorder,neutro:G.borderSubtle,inflamatorio:"rgba(180,80,80,0.25)"};
   return(
     <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",cursor:"pointer"}} onClick={()=>setExp(e=>!e)}>
-        <div style={{flex:1}}>
+      {editing&&(
+        <EditMealModal
+          meal={meal}
+          onSave={(desc,date)=>{onSave(desc,date);setEditing(false);}}
+          onDelete={()=>{onDelete();setEditing(false);}}
+          onClose={()=>setEditing(false)}
+        />
+      )}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+        <div style={{flex:1,cursor:"pointer"}} onClick={()=>setExp(e=>!e)}>
           <p style={{margin:"0 0 8px",color:G.text,fontSize:13,lineHeight:1.5}}>{meal.desc}</p>
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
             <Tag bg={G.goldLight} color={G.gold} border="rgba(180,148,72,0.25)">⭐ {meal.score}/10</Tag>
@@ -117,36 +146,13 @@ function MealCard({meal,onMoveDate,onDelete}){
             <Tag bg={skinBg[meal.skin_impact]} color={skinC[meal.skin_impact]} border={skinBd[meal.skin_impact]}>🌿 {meal.skin_impact}</Tag>
           </div>
         </div>
-        <span style={{fontSize:10,color:G.hint,marginLeft:10,marginTop:2}}>{exp?"▲":"▼"}</span>
+        <button onClick={()=>setEditing(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"4px 8px",cursor:"pointer",fontSize:12,color:G.hint,marginLeft:10,flexShrink:0,fontFamily:"inherit"}}>✏️</button>
       </div>
-      {exp&&(
-        <div>
-          <MealDetails meal={meal}/>
-          <div style={{display:"flex",gap:8,marginTop:12}}>
-            {onMoveDate&&!moving&&(
-              <button onClick={(e)=>{e.stopPropagation();setMoving(true);}} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"4px 10px",fontSize:11,color:G.hint,cursor:"pointer",fontFamily:"inherit"}}>
-                📅 Mover fecha
-              </button>
-            )}
-            {onDelete&&(
-              <button onClick={(e)=>{e.stopPropagation();if(window.confirm("¿Eliminar esta comida?"))onDelete();}} style={{background:"none",border:"1px solid rgba(180,80,80,0.25)",borderRadius:8,padding:"4px 10px",fontSize:11,color:G.red,cursor:"pointer",fontFamily:"inherit"}}>
-                🗑️ Eliminar
-              </button>
-            )}
-          </div>
-          {moving&&(
-            <div style={{display:"flex",gap:8,alignItems:"center",marginTop:8}}>
-              <input type="date" value={newDate} onChange={e=>setNewDate(e.target.value)} style={{...inp,marginBottom:0,flex:1,fontSize:12,padding:"6px 10px"}}/>
-              <Btn onClick={()=>{if(newDate){onMoveDate(newDate);setMoving(false);setNewDate("");}}} disabled={!newDate}>OK</Btn>
-              <button onClick={()=>{setMoving(false);setNewDate("");}} style={{background:"none",border:"none",cursor:"pointer",color:G.hint,fontSize:13,fontFamily:"inherit"}}>✕</button>
-            </div>
-          )}
-        </div>
-      )}
+      {exp&&<MealDetails meal={meal}/>}
     </div>
   );
 }
-function MealSlot({slot,meal,input,onInput,loading,onSubmit,onMoveDate,onDelete}){
+function MealSlot({slot,meal,input,onInput,loading,onSubmit,onMoveDate,onDelete,onSave}){
   return(
     <div style={{padding:"15px 18px"}}>
       <div style={{fontWeight:500,fontSize:13,color:G.text,marginBottom:10,display:"flex",alignItems:"center",gap:7}}>
@@ -154,7 +160,7 @@ function MealSlot({slot,meal,input,onInput,loading,onSubmit,onMoveDate,onDelete}
         <span style={{letterSpacing:"0.01em",color:G.muted}}>{slot.label}</span>
       </div>
       {meal
-        ? <MealCard meal={meal} onMoveDate={onMoveDate} onDelete={onDelete}/>
+        ? <MealCard meal={meal} onMoveDate={onMoveDate} onDelete={onDelete} onSave={onSave}/>
         : <div style={{display:"flex",gap:8}}><input value={input} onChange={e=>onInput(e.target.value)} placeholder="¿Qué comiste?" style={{...inp,flex:1,marginBottom:0}} onKeyDown={e=>e.key==="Enter"&&onSubmit()}/><Btn loading={loading} onClick={onSubmit}>Analizar</Btn></div>
       }
     </div>
@@ -461,6 +467,19 @@ export default function App(){
   };
 
   const handleDeleteMeal=async(slotId)=>{
+    const handleEditMeal=async(slotId,newDesc,targetDate)=>{
+    const meal={...todayData.meals[slotId],desc:newDesc};
+    if(targetDate&&targetDate!==today){
+      const toDay=days[targetDate]||{meals:{},snacks:[],workout:null};
+      const newFromMeals={...todayData.meals};delete newFromMeals[slotId];
+      await saveDay(today,{...todayData,meals:newFromMeals});
+      await saveDay(targetDate,{...toDay,meals:{...toDay.meals,[slotId]:meal}});
+      const[,d]=await Promise.all([loadPerfil(),loadAllDays()]);
+      setDays(d);
+    } else {
+      await updateToday({meals:{...todayData.meals,[slotId]:meal}});
+    }
+  };
     const newMeals={...todayData.meals};
     delete newMeals[slotId];
     await updateToday({meals:newMeals});
@@ -576,6 +595,7 @@ export default function App(){
                   onSubmit={()=>handleMealSubmit(slot.id,slot.label)}
                   onMoveDate={(date)=>handleMoveDate(slot.id,date,true)}
                   onDelete={()=>handleDeleteMeal(slot.id)}
+                  onSave={(desc,date)=>{handleEditMeal(slot.id,desc,date);}}
                 />
                 {i<FIXED_SLOTS.length-1&&<Divider/>}
               </div>
