@@ -308,7 +308,7 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
   ))}
 </div>
         {/* Leyenda */}
-        <div style={{display:"flex",gap:16,marginTop:16,fontSize:11,color:G.hint}}>
+        <div style={{display:"flex",gap:16,marginTop:20,fontSize:11,color:G.hint}}>
           <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:12,height:8,background:G.goldLight,border:`1px solid ${G.gold}`,borderRadius:2,display:"inline-block"}}/>Proteína (g)</span>
           <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:14,height:14,borderRadius:"50%",background:G.sage,display:"inline-block"}}/>Puntaje</span>
         </div>
