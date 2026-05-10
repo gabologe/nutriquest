@@ -301,6 +301,7 @@ function WeekRanking({days,D}) {
 function ProfilePanel({profile,onUpdate,userId,D}) {
   const [editing,setEditing] = useState(false);
   const [form,setForm] = useState({name:profile.name,weight:profile.weight,height:profile.height,age:profile.age||"",sex:profile.sex||"",activity:profile.activity||""});
+  const [selectedGoals,setSelectedGoals] = useState(profile.goals||[]);
 
   const bmi = (profile.weight/((profile.height/100)**2)).toFixed(1);
   const protGoal = Math.round(profile.weight*2);
@@ -313,6 +314,147 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
     verme_mejor:"✨ Verme mejor",
   };
 
+  const ACTIVIDAD_FACTOR = {
+    sedentario:1.2,ligero:1.375,moderado:1.55,activo:1.725,muy_activo:1.9,
+  };
+
+  const calcTDEE = (peso,altura,edad,sexo,actividad) => {
+    if (!peso||!altura||!edad||!sexo||!actividad) return null;
+    const bmr = sexo==="masculino"
+      ? 88.36+13.4*peso+4.8*altura-5.7*edad
+      : 447.6+9.2*peso+3.1*altura-4.3*edad;
+    return Math.round(bmr*(ACTIVIDAD_FACTOR[actividad]||1.55));
+  };
+
+  const inp = {width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"11px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
+  const lbl = {display:"block",fontSize:D.sm,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
+
+  const toggleGoal = (id) => {
+    setSelectedGoals(prev=>{
+      if (prev.includes(id)) return prev.filter(x=>x!==id);
+      if (prev.length>=3) return prev;
+      return [...prev,id];
+    });
+  };
+
+  const handleSave = async () => {
+    if (!form.name||!+form.weight||!+form.height) return;
+    const tdee = calcTDEE(+form.weight,+form.height,+form.age||profile.age,form.sex||profile.sex,form.activity||profile.activity);
+    const updated = {
+      ...profile,
+      name:form.name,weight:+form.weight,height:+form.height,
+      age:+form.age||profile.age,sex:form.sex||profile.sex,
+      activity:form.activity||profile.activity,
+      goals:selectedGoals,tdee,
+    };
+    await savePerfil(userId,updated); onUpdate(updated); setEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditing(false);
+    setForm({name:profile.name,weight:profile.weight,height:profile.height,age:profile.age||"",sex:profile.sex||"",activity:profile.activity||""});
+    setSelectedGoals(profile.goals||[]);
+  };
+
+  const previewTDEE = calcTDEE(
+    +form.weight||profile.weight,+form.height||profile.height,
+    +form.age||profile.age,form.sex||profile.sex,form.activity||profile.activity
+  );
+  const previewProt = Math.round((+form.weight||profile.weight)*2);
+
+  if (editing) return (
+    <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
+      <p style={{margin:"0 0 14px",fontSize:D.lg,fontWeight:600,color:G.text}}>Editar perfil</p>
+
+      <label style={lbl}>Nombre</label>
+      <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} style={inp}/>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+        <div><label style={lbl}>Peso (kg)</label><input type="number" value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} style={inp}/></div>
+        <div><label style={lbl}>Altura (cm)</label><input type="number" value={form.height} onChange={e=>setForm(f=>({...f,height:e.target.value}))} style={inp}/></div>
+        <div><label style={lbl}>Edad</label><input type="number" value={form.age} onChange={e=>setForm(f=>({...f,age:e.target.value}))} style={inp}/></div>
+      </div>
+
+      <label style={lbl}>Objetivos <span style={{color:G.hint,fontSize:11,textTransform:"none",letterSpacing:0}}>(hasta 3)</span></label>
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
+        {Object.entries(GOAL_LABELS).map(([id,label])=>{
+          const selected = selectedGoals.includes(id);
+          const disabled = !selected&&selectedGoals.length>=3;
+          return (
+            <div key={id} onClick={disabled?undefined:()=>toggleGoal(id)} style={{
+              display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,
+              cursor:disabled?"not-allowed":"pointer",
+              background:selected?"rgba(90,122,84,0.12)":"rgba(255,255,255,0.35)",
+              border:`1.5px solid ${selected?G.sage:"rgba(255,255,255,0.5)"}`,
+              opacity:disabled?0.5:1,transition:"all 0.2s",
+            }}>
+              <span style={{flex:1,fontSize:D.sm,color:selected?G.sage:G.muted,fontWeight:selected?600:400}}>{label}</span>
+              <div style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${selected?G.sage:"rgba(180,180,180,0.4)"}`,background:selected?G.sage:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                {selected&&<span style={{color:"#fff",fontSize:10,fontWeight:700}}>✓</span>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+        <div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
+          <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>META DE PROTEÍNA</p>
+          <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{previewProt}g<span style={{fontSize:12,fontWeight:400,color:G.hint}}>/día</span></p>
+        </div>
+        {previewTDEE&&(
+          <div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
+            <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>CALORÍAS DIARIAS</p>
+            <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{previewTDEE.toLocaleString()}<span style={{fontSize:12,fontWeight:400,color:G.hint}}> kcal</span></p>
+          </div>
+        )}
+      </div>
+
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={handleCancel} style={{padding:"11px 20px",borderRadius:10,border:`1px solid rgba(180,180,180,0.35)`,background:"transparent",color:G.hint,fontSize:D.sm,fontWeight:500,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+        <div style={{flex:1}}><Btn onClick={handleSave} full>Guardar</Btn></div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
+        <div style={{display:"flex",gap:12,alignItems:"center"}}>
+          <div style={{width:42,height:42,borderRadius:"50%",background:G.sageLight,border:`1px solid ${G.sageBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🌿</div>
+          <div>
+            <p style={{margin:0,fontSize:D.md,fontWeight:600,color:G.text}}>{profile.name}</p>
+            <p style={{margin:"3px 0 0",fontSize:D.sm,color:G.hint}}>{profile.weight}kg · {profile.height}cm · IMC {bmi}</p>
+          </div>
+        </div>
+        <button onClick={()=>setEditing(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:G.hint,fontFamily:"inherit",flexShrink:0}}>editar</button>
+      </div>
+
+      {(profile.goals||[]).length>0&&(
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+          {(profile.goals||[]).map(g=>(
+            <span key={g} style={{fontSize:12,background:G.sageLight,color:G.sage,padding:"4px 10px",borderRadius:99,fontWeight:500}}>
+              {GOAL_LABELS[g]||g}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
+          <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>META DE PROTEÍNA</p>
+          <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{protGoal}g<span style={{fontSize:12,fontWeight:400,color:G.hint}}>/día</span></p>
+        </div>
+        {profile.tdee&&(
+          <div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
+            <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>CALORÍAS DIARIAS</p>
+            <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{profile.tdee.toLocaleString()}<span style={{fontSize:12,fontWeight:400,color:G.hint}}> kcal</span></p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
   const inp = {width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"11px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
   const lbl = {display:"block",fontSize:D.sm,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
 
