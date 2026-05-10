@@ -750,9 +750,25 @@ export default function App() {
             <span style={{color:G.hint,letterSpacing:"0.04em",fontSize:D.xs}}>PROTEÍNA HOY</span>
             <span style={{color:todayProt>=proteinGoal?G.sage:G.gold,fontWeight:600}}>{Math.round(todayProt)}g / {proteinGoal}g</span>
           </div>
-          <div style={{background:"rgba(255,255,255,0.3)",borderRadius:99,height:6,overflow:"hidden"}}>
+          <div style={{background:"rgba(255,255,255,0.3)",borderRadius:99,height:6,overflow:"hidden",marginBottom:14}}>
             <div style={{width:`${Math.min(100,(todayProt/proteinGoal)*100)}%`,background:G.sage,height:"100%",borderRadius:99,transition:"width 0.6s ease",opacity:0.75}}/>
           </div>
+          {profile?.tdee&&(()=>{
+            const todayCal=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.calories||m.protein_g*4||0),0);
+            const calPct=Math.min(100,(todayCal/profile.tdee)*100);
+            const calColor=calPct>100?G.red:calPct>85?G.gold:G.sage;
+            return (
+              <>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:D.sm,marginBottom:8}}>
+                  <span style={{color:G.hint,letterSpacing:"0.04em",fontSize:D.xs}}>CALORÍAS HOY</span>
+                  <span style={{color:calColor,fontWeight:600}}>{Math.round(todayCal)} / {profile.tdee.toLocaleString()} kcal</span>
+                </div>
+                <div style={{background:"rgba(255,255,255,0.3)",borderRadius:99,height:6,overflow:"hidden"}}>
+                  <div style={{width:`${calPct}%`,background:calColor,height:"100%",borderRadius:99,transition:"width 0.6s ease",opacity:0.75}}/>
+                </div>
+              </>
+            );
+          })()}
         </div>
 
         <div style={{...glassSubtle,display:"flex",gap:0,marginBottom:20,overflow:"hidden",padding:4,borderRadius:14}}>
