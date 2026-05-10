@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
+import Onboarding from "./Onboarding";
 
 const supabase = createClient(
   "https://pbxxevlzcezkmeyxsydn.supabase.co",
@@ -679,7 +680,7 @@ export default function App() {
     </div>
   );
 
-  if (!profile) return <ProfileSetup onSave={setProfile} userId={USER_ID}/>;
+  if (!profile || !profile.onboarded) return <Onboarding onSave={async (perfil) => { await savePerfil(USER_ID, perfil); setProfile(perfil); }} userId={USER_ID}/>;
 
   const proteinGoal = Math.round(profile.weight*2);
   const todayProt = [...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.protein_g||0),0);
