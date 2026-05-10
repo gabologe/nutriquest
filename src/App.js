@@ -653,7 +653,7 @@ export default function App() {
 
   const proteinGoal=Math.round(profile.weight*2);
   const todayProt=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.protein_g||0),0);
-  const TABS=[{id:"today",label:"Hoy"},{id:"workout",label:"Entreno"},{id:"history",label:"Historial"},{id:"metrics",label:"Métricas"},{id:"badges",label:"Badges"}];
+  const TABS=[{id:"today",label:"Hoy"},{id:"progress",label:"Progreso"},{id:"plan",label:"Plan"}];
 
   return (
     <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1} 0%,${G.bg2} 50%,${G.bg3} 100%)`,color:G.text}}>
@@ -713,7 +713,7 @@ export default function App() {
           </div>
         )}
 
-        {tab==="workout"&&(
+        {tab==="today"&&tab==="workout"&&(
           <div style={{...glassCard,padding:22}}>
             <p style={{margin:"0 0 18px",fontSize:D.lg,fontWeight:500,color:G.text}}>Entrenamiento de hoy</p>
             {todayData.workout?<WorkoutCard workout={todayData.workout} D={D}/>:(
