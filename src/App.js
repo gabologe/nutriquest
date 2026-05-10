@@ -38,7 +38,6 @@ const FIXED_SLOTS = [
 const WORKOUT_TYPES = ["Fuerza/hipertrofia","Cardio","Funcional/HIIT","Movilidad","Deporte"];
 const todayStr = () => new Date().toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
 
-// ── Hook responsive ────────────────────────────────────────────────────────
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
   useEffect(() => {
@@ -49,7 +48,6 @@ function useIsDesktop() {
   return isDesktop;
 }
 
-// ── Supabase helpers ───────────────────────────────────────────────────────
 async function loadAllDays(userId) {
   const {data,error} = await supabase.from("registros").select("*").eq("user_id",userId);
   if (error) { console.error(error); return {}; }
@@ -70,8 +68,8 @@ async function savePerfil(userId, perfil) {
 }
 async function saveDay(userId, fecha, dayData) {
   await supabase.from("registros").upsert({
-    user_id:userId, auth_user_id:userId, fecha,
-    meals:dayData.meals||{}, snacks:dayData.snacks||[], workout:dayData.workout||null,
+    user_id:userId,auth_user_id:userId,fecha,
+    meals:dayData.meals||{},snacks:dayData.snacks||[],workout:dayData.workout||null,
   },{onConflict:"user_id,fecha"});
 }
 const lsLoad = (k,def) => { try { const v=localStorage.getItem(k); return v?JSON.parse(v):def; } catch { return def; } };
@@ -84,33 +82,27 @@ async function callAI(prompt, system) {
   return JSON.parse(text.replace(/```json|```/g,"").trim());
 }
 
-// ── Shared styles (static) ─────────────────────────────────────────────────
 const glassCard = {background:G.glass,backdropFilter:blur,WebkitBackdropFilter:blur,border:`1px solid ${G.border}`,borderRadius:18};
 const glassSubtle = {background:G.glassDark,backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.borderSubtle}`,borderRadius:12};
 
-// ── Auth Screen ────────────────────────────────────────────────────────────
 function AuthScreen() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLogin, setIsLogin] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-
+  const [email,setEmail] = useState("");
+  const [password,setPassword] = useState("");
+  const [isLogin,setIsLogin] = useState(true);
+  const [loading,setLoading] = useState(false);
+  const [message,setMessage] = useState("");
   const inp = {width:"100%",background:"rgba(255,255,255,0.5)",border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"12px 14px",fontSize:16,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
   const lbl = {display:"block",fontSize:13,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
-
   const handleSubmit = async () => {
     if (!email||!password) return;
-    setLoading(true);
-    setMessage("");
-    const { error } = isLogin
-      ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password });
+    setLoading(true); setMessage("");
+    const {error} = isLogin
+      ? await supabase.auth.signInWithPassword({email,password})
+      : await supabase.auth.signUp({email,password});
     if (error) setMessage(error.message);
     else if (!isLogin) setMessage("Revisá tu email para confirmar tu cuenta.");
     setLoading(false);
   };
-
   return (
     <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
       <div style={{...glassCard,padding:36,maxWidth:400,width:"100%"}}>
@@ -119,49 +111,21 @@ function AuthScreen() {
           <h1 style={{margin:0,fontSize:28,fontWeight:300,color:G.text,letterSpacing:"-0.02em"}}>NutriQuest</h1>
           <p style={{margin:"8px 0 0",fontSize:13,color:G.hint,letterSpacing:"0.03em"}}>TU COMPAÑERO NUTRICIONAL</p>
         </div>
-
         <label style={lbl}>Email</label>
-        <input
-          type="email"
-          value={email}
-          onChange={e=>setEmail(e.target.value)}
-          placeholder="tu@email.com"
-          style={inp}
-          onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
-        />
-
+        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" style={inp} onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
         <label style={lbl}>Contraseña</label>
-        <input
-          type="password"
-          value={password}
-          onChange={e=>setPassword(e.target.value)}
-          placeholder="••••••••"
-          style={inp}
-          onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
-        />
-
-        {message && (
-          <div style={{background:message.includes("email")?G.sageLight:G.redLight,border:`1px solid ${message.includes("email")?G.sageBorder:"rgba(180,80,80,0.25)"}`,borderRadius:8,padding:"10px 14px",fontSize:14,color:message.includes("email")?G.sage:G.red,marginBottom:8}}>
-            {message}
-          </div>
-        )}
-
-        <div style={{marginTop:16}}>
-          <Btn onClick={handleSubmit} loading={loading} full>
-            {isLogin ? "Iniciar sesión" : "Registrarme"}
-          </Btn>
-        </div>
-
+        <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" style={inp} onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
+        {message&&<div style={{background:message.includes("email")?G.sageLight:G.redLight,border:`1px solid ${message.includes("email")?G.sageBorder:"rgba(180,80,80,0.25)"}`,borderRadius:8,padding:"10px 14px",fontSize:14,color:message.includes("email")?G.sage:G.red,marginBottom:8}}>{message}</div>}
+        <div style={{marginTop:16}}><Btn onClick={handleSubmit} loading={loading} full>{isLogin?"Iniciar sesión":"Registrarme"}</Btn></div>
         <p onClick={()=>{setIsLogin(l=>!l);setMessage("");}} style={{textAlign:"center",marginTop:20,fontSize:14,color:G.hint,cursor:"pointer",userSelect:"none"}}>
-          {isLogin ? "¿No tenés cuenta? " : "¿Ya tenés cuenta? "}
-          <span style={{color:G.sage,fontWeight:600}}>{isLogin ? "Registrate" : "Iniciá sesión"}</span>
+          {isLogin?"¿No tenés cuenta? ":"¿Ya tenés cuenta? "}
+          <span style={{color:G.sage,fontWeight:600}}>{isLogin?"Registrate":"Iniciá sesión"}</span>
         </p>
       </div>
     </div>
   );
 }
 
-// ── Shared components ──────────────────────────────────────────────────────
 function Btn({onClick,loading,children,full,disabled}) {
   return (
     <button onClick={onClick} disabled={loading||disabled} style={{
@@ -172,12 +136,7 @@ function Btn({onClick,loading,children,full,disabled}) {
       opacity:loading||disabled?0.8:1,
       display:"flex",alignItems:"center",justifyContent:"center",gap:8,
     }}>
-      {loading ? (
-        <>
-          <span style={{width:15,height:15,border:"2px solid rgba(255,255,255,0.4)",borderTop:"2px solid #fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>
-          <style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style>
-        </>
-      ) : children}
+      {loading?(<><span style={{width:15,height:15,border:"2px solid rgba(255,255,255,0.4)",borderTop:"2px solid #fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style></>):children}
     </button>
   );
 }
@@ -203,7 +162,7 @@ function XPBar({xp,streak}) {
   return <div style={{...glassCard,padding:"16px 20px",marginBottom:16,display:"flex",alignItems:"center",gap:14}}><span style={{fontSize:26}}>{lvl.emoji}</span><div style={{flex:1}}><div style={{display:"flex",justifyContent:"space-between",fontSize:14,marginBottom:6}}><span style={{fontWeight:600,color:G.sage,letterSpacing:"0.03em"}}>{lvl.name}</span><span style={{color:G.hint,fontSize:13}}>{next?`${xp} / ${next.xp} xp`:"Máximo"}</span></div><div style={{background:"rgba(255,255,255,0.35)",borderRadius:99,height:6,overflow:"hidden"}}><div style={{width:`${pct}%`,background:G.sage,height:"100%",borderRadius:99,transition:"width 0.6s ease",opacity:0.8}}/></div></div>{streak>0&&<div style={{...glassSubtle,display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 12px",minWidth:42,borderRadius:10}}><span style={{fontSize:16}}>🔥</span><span style={{fontSize:12,color:G.gold,fontWeight:600,marginTop:1}}>{streak}d</span></div>}</div>;
 }
 
-function MealDetails({meal, D}) {
+function MealDetails({meal,D}) {
   const hyC = {excelente:G.sage,bueno:G.sageMid,moderado:G.gold,bajo:G.red};
   return <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(255,255,255,0.4)"}}><div style={{marginBottom:8,fontSize:D.md}}><span style={{color:G.hint,fontSize:D.sm}}>Hipertrofia — </span><span style={{color:hyC[meal.hypertrophy]||G.muted,fontWeight:600}}>{meal.hypertrophy}</span></div>{(meal.nutrients||[]).map((n,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:6}}><span style={{color:G.sage,fontWeight:600,minWidth:100,fontSize:D.sm}}>{n.name}</span><span style={{color:G.muted,fontSize:D.sm,lineHeight:1.5}}>{n.benefit}</span></div>)}{meal.tip&&<div style={{marginTop:10,background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:8,padding:"10px 14px",color:G.sage,fontSize:D.sm,fontStyle:"italic"}}>💡 {meal.tip}</div>}</div>;
 }
@@ -224,16 +183,12 @@ function EditMealModal({meal,onSave,onDelete,onClose}) {
           </div>
         </div>
         <label style={{display:"block",fontSize:13,color:"#93a48f",textTransform:"uppercase",letterSpacing:"0.04em",marginBottom:6}}>Descripción</label>
-        <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3}
-          style={{width:"100%",background:"rgba(255,255,255,0.65)",border:"1px solid rgba(200,200,200,0.4)",borderRadius:10,color:"#2a3428",padding:"12px 14px",fontSize:16,boxSizing:"border-box",fontFamily:"inherit",resize:"vertical",outline:"none",minHeight:80}}/>
+        <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3} style={{width:"100%",background:"rgba(255,255,255,0.65)",border:"1px solid rgba(200,200,200,0.4)",borderRadius:10,color:"#2a3428",padding:"12px 14px",fontSize:16,boxSizing:"border-box",fontFamily:"inherit",resize:"vertical",outline:"none",minHeight:80}}/>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:20}}>
           <button onClick={onClose} style={{padding:12,borderRadius:10,border:"1px solid rgba(180,180,180,0.35)",background:"transparent",color:"#93a48f",fontSize:15,fontWeight:500,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
           <button onClick={()=>onSave(desc,date)} style={{padding:12,borderRadius:10,border:"none",background:"#5a7a54",color:"#fff",fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Guardar</button>
         </div>
-        <button onClick={()=>{if(window.confirm("¿Eliminar esta comida?"))onDelete();}}
-          style={{display:"block",width:"100%",marginTop:18,textAlign:"center",fontSize:14,color:"#8a4040",textDecoration:"underline",textUnderlineOffset:3,background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:"inherit"}}>
-          Eliminar esta comida
-        </button>
+        <button onClick={()=>{if(window.confirm("¿Eliminar esta comida?"))onDelete();}} style={{display:"block",width:"100%",marginTop:18,textAlign:"center",fontSize:14,color:"#8a4040",textDecoration:"underline",textUnderlineOffset:3,background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:"inherit"}}>Eliminar esta comida</button>
       </div>
     </div>
   );
@@ -273,8 +228,8 @@ function MealSlot({slot,meal,input,onInput,loading,onSubmit,onDelete,onSave,D}) 
         <span style={{letterSpacing:"0.01em",color:G.muted}}>{slot.label}</span>
       </div>
       {meal
-        ? <MealCard meal={meal} onDelete={onDelete} onSave={onSave} D={D}/>
-        : <div style={{display:"flex",gap:8}}><input value={input} onChange={e=>onInput(e.target.value)} placeholder="¿Qué comiste?" style={{...inp,flex:1}} onKeyDown={e=>e.key==="Enter"&&onSubmit()}/><Btn loading={loading} onClick={onSubmit}>Analizar</Btn></div>
+        ?<MealCard meal={meal} onDelete={onDelete} onSave={onSave} D={D}/>
+        :<div style={{display:"flex",gap:8}}><input value={input} onChange={e=>onInput(e.target.value)} placeholder="¿Qué comiste?" style={{...inp,flex:1}} onKeyDown={e=>e.key==="Enter"&&onSubmit()}/><Btn loading={loading} onClick={onSubmit}>Analizar</Btn></div>
       }
     </div>
   );
@@ -307,22 +262,14 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
   const protGoal = Math.round(profile.weight*2);
 
   const GOAL_LABELS = {
-    comer_mejor:"🥗 Comer mejor",
-    energia:"⚡ Más energía",
-    musculo:"💪 Ganar músculo",
-    bajar_peso:"⚖️ Bajar de peso",
-    verme_mejor:"✨ Verme mejor",
+    comer_mejor:"🥗 Comer mejor",energia:"⚡ Más energía",musculo:"💪 Ganar músculo",
+    bajar_peso:"⚖️ Bajar de peso",verme_mejor:"✨ Verme mejor",
   };
-
-  const ACTIVIDAD_FACTOR = {
-    sedentario:1.2,ligero:1.375,moderado:1.55,activo:1.725,muy_activo:1.9,
-  };
+  const ACTIVIDAD_FACTOR = {sedentario:1.2,ligero:1.375,moderado:1.55,activo:1.725,muy_activo:1.9};
 
   const calcTDEE = (peso,altura,edad,sexo,actividad) => {
     if (!peso||!altura||!edad||!sexo||!actividad) return null;
-    const bmr = sexo==="masculino"
-      ? 88.36+13.4*peso+4.8*altura-5.7*edad
-      : 447.6+9.2*peso+3.1*altura-4.3*edad;
+    const bmr = sexo==="masculino"?88.36+13.4*peso+4.8*altura-5.7*edad:447.6+9.2*peso+3.1*altura-4.3*edad;
     return Math.round(bmr*(ACTIVIDAD_FACTOR[actividad]||1.55));
   };
 
@@ -340,13 +287,7 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
   const handleSave = async () => {
     if (!form.name||!+form.weight||!+form.height) return;
     const tdee = calcTDEE(+form.weight,+form.height,+form.age||profile.age,form.sex||profile.sex,form.activity||profile.activity);
-    const updated = {
-      ...profile,
-      name:form.name,weight:+form.weight,height:+form.height,
-      age:+form.age||profile.age,sex:form.sex||profile.sex,
-      activity:form.activity||profile.activity,
-      goals:selectedGoals,tdee,
-    };
+    const updated = {...profile,name:form.name,weight:+form.weight,height:+form.height,age:+form.age||profile.age,sex:form.sex||profile.sex,activity:form.activity||profile.activity,goals:selectedGoals,tdee};
     await savePerfil(userId,updated); onUpdate(updated); setEditing(false);
   };
 
@@ -356,38 +297,26 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
     setSelectedGoals(profile.goals||[]);
   };
 
-  const previewTDEE = calcTDEE(
-    +form.weight||profile.weight,+form.height||profile.height,
-    +form.age||profile.age,form.sex||profile.sex,form.activity||profile.activity
-  );
+  const previewTDEE = calcTDEE(+form.weight||profile.weight,+form.height||profile.height,+form.age||profile.age,form.sex||profile.sex,form.activity||profile.activity);
   const previewProt = Math.round((+form.weight||profile.weight)*2);
 
   if (editing) return (
     <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
       <p style={{margin:"0 0 14px",fontSize:D.lg,fontWeight:600,color:G.text}}>Editar perfil</p>
-
       <label style={lbl}>Nombre</label>
       <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} style={inp}/>
-
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
         <div><label style={lbl}>Peso (kg)</label><input type="number" value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} style={inp}/></div>
         <div><label style={lbl}>Altura (cm)</label><input type="number" value={form.height} onChange={e=>setForm(f=>({...f,height:e.target.value}))} style={inp}/></div>
         <div><label style={lbl}>Edad</label><input type="number" value={form.age} onChange={e=>setForm(f=>({...f,age:e.target.value}))} style={inp}/></div>
       </div>
-
       <label style={lbl}>Objetivos <span style={{color:G.hint,fontSize:11,textTransform:"none",letterSpacing:0}}>(hasta 3)</span></label>
       <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
         {Object.entries(GOAL_LABELS).map(([id,label])=>{
           const selected = selectedGoals.includes(id);
           const disabled = !selected&&selectedGoals.length>=3;
           return (
-            <div key={id} onClick={disabled?undefined:()=>toggleGoal(id)} style={{
-              display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,
-              cursor:disabled?"not-allowed":"pointer",
-              background:selected?"rgba(90,122,84,0.12)":"rgba(255,255,255,0.35)",
-              border:`1.5px solid ${selected?G.sage:"rgba(255,255,255,0.5)"}`,
-              opacity:disabled?0.5:1,transition:"all 0.2s",
-            }}>
+            <div key={id} onClick={disabled?undefined:()=>toggleGoal(id)} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,cursor:disabled?"not-allowed":"pointer",background:selected?"rgba(90,122,84,0.12)":"rgba(255,255,255,0.35)",border:`1.5px solid ${selected?G.sage:"rgba(255,255,255,0.5)"}`,opacity:disabled?0.5:1,transition:"all 0.2s"}}>
               <span style={{flex:1,fontSize:D.sm,color:selected?G.sage:G.muted,fontWeight:selected?600:400}}>{label}</span>
               <div style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${selected?G.sage:"rgba(180,180,180,0.4)"}`,background:selected?G.sage:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                 {selected&&<span style={{color:"#fff",fontSize:10,fontWeight:700}}>✓</span>}
@@ -396,20 +325,16 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
           );
         })}
       </div>
-
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
         <div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
           <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>META DE PROTEÍNA</p>
           <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{previewProt}g<span style={{fontSize:12,fontWeight:400,color:G.hint}}>/día</span></p>
         </div>
-        {previewTDEE&&(
-          <div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
-            <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>CALORÍAS DIARIAS</p>
-            <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{previewTDEE.toLocaleString()}<span style={{fontSize:12,fontWeight:400,color:G.hint}}> kcal</span></p>
-          </div>
-        )}
+        {previewTDEE&&<div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
+          <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>CALORÍAS DIARIAS</p>
+          <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{previewTDEE.toLocaleString()}<span style={{fontSize:12,fontWeight:400,color:G.hint}}> kcal</span></p>
+        </div>}
       </div>
-
       <div style={{display:"flex",gap:8}}>
         <button onClick={handleCancel} style={{padding:"11px 20px",borderRadius:10,border:`1px solid rgba(180,180,180,0.35)`,background:"transparent",color:G.hint,fontSize:D.sm,fontWeight:500,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
         <div style={{flex:1}}><Btn onClick={handleSave} full>Guardar</Btn></div>
@@ -429,131 +354,20 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
         </div>
         <button onClick={()=>setEditing(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:G.hint,fontFamily:"inherit",flexShrink:0}}>editar</button>
       </div>
-
       {(profile.goals||[]).length>0&&(
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
-          {(profile.goals||[]).map(g=>(
-            <span key={g} style={{fontSize:12,background:G.sageLight,color:G.sage,padding:"4px 10px",borderRadius:99,fontWeight:500}}>
-              {GOAL_LABELS[g]||g}
-            </span>
-          ))}
+          {(profile.goals||[]).map(g=><span key={g} style={{fontSize:12,background:G.sageLight,color:G.sage,padding:"4px 10px",borderRadius:99,fontWeight:500}}>{GOAL_LABELS[g]||g}</span>)}
         </div>
       )}
-
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
         <div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
           <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>META DE PROTEÍNA</p>
           <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{protGoal}g<span style={{fontSize:12,fontWeight:400,color:G.hint}}>/día</span></p>
         </div>
-        {profile.tdee&&(
-          <div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
-            <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>CALORÍAS DIARIAS</p>
-            <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{profile.tdee.toLocaleString()}<span style={{fontSize:12,fontWeight:400,color:G.hint}}> kcal</span></p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-  const inp = {width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"11px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
-  const lbl = {display:"block",fontSize:D.sm,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
-
-  const handleSave = async () => {
-    if (!form.name||!+form.weight||!+form.height) return;
-    const updated = {...profile,name:form.name,weight:+form.weight,height:+form.height,age:+form.age||profile.age,sex:form.sex||profile.sex,activity:form.activity||profile.activity};
-    await savePerfil(userId,updated); onUpdate(updated); setEditing(false);
-  };
-
-  if (editing) return (
-    <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
-      <p style={{margin:"0 0 14px",fontSize:D.lg,fontWeight:600,color:G.text}}>Editar perfil</p>
-      <label style={lbl}>Nombre</label>
-      <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} style={inp}/>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-        <div><label style={lbl}>Peso (kg)</label><input type="number" value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} style={inp}/></div>
-        <div><label style={lbl}>Altura (cm)</label><input type="number" value={form.height} onChange={e=>setForm(f=>({...f,height:e.target.value}))} style={inp}/></div>
-        <div><label style={lbl}>Edad</label><input type="number" value={form.age} onChange={e=>setForm(f=>({...f,age:e.target.value}))} style={inp}/></div>
-      </div>
-      {form.weight&&form.height&&<div style={{background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:8,padding:"10px 14px",fontSize:D.sm,color:G.sage,marginBottom:10}}>Meta proteína: <strong>{Math.round(+form.weight*2)}g/día</strong> · IMC: {(+form.weight/((+form.height/100)**2)).toFixed(1)}</div>}
-      <div style={{display:"flex",gap:8}}>
-        <Btn onClick={handleSave} full>Guardar</Btn>
-        <button onClick={()=>setEditing(false)} style={{padding:"11px 20px",borderRadius:10,border:`1px solid rgba(180,180,180,0.35)`,background:"transparent",color:G.hint,fontSize:D.sm,fontWeight:500,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
-      </div>
-    </div>
-  );
-
-  return (
-    <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
-        <div style={{display:"flex",gap:12,alignItems:"center"}}>
-          <div style={{width:42,height:42,borderRadius:"50%",background:G.sageLight,border:`1px solid ${G.sageBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🌿</div>
-          <div>
-            <p style={{margin:0,fontSize:D.md,fontWeight:600,color:G.text}}>{profile.name}</p>
-            <p style={{margin:"3px 0 0",fontSize:D.sm,color:G.hint}}>{profile.weight}kg · {profile.height}cm · IMC {bmi}</p>
-          </div>
-        </div>
-        <button onClick={()=>setEditing(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:G.hint,fontFamily:"inherit"}}>editar</button>
-      </div>
-
-      {(profile.goals||[]).length>0&&(
-        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
-          {(profile.goals||[]).map(g=>(
-            <span key={g} style={{fontSize:12,background:G.sageLight,color:G.sage,border:`1px solid ${G.sageBorder}`,padding:"4px 10px",borderRadius:99,fontWeight:500}}>
-              {GOAL_LABELS[g]||g}
-            </span>
-          ))}
-        </div>
-      )}
-
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-        <div style={{background:"rgba(255,255,255,0.35)",borderRadius:10,padding:"10px 14px"}}>
-          <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>META DE PROTEÍNA</p>
-          <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{protGoal}g<span style={{fontSize:12,fontWeight:400,color:G.hint}}>/día</span></p>
-        </div>
-        {profile.tdee&&(
-          <div style={{background:"rgba(255,255,255,0.35)",borderRadius:10,padding:"10px 14px"}}>
-            <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>CALORÍAS DIARIAS</p>
-            <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{profile.tdee.toLocaleString()}<span style={{fontSize:12,fontWeight:400,color:G.hint}}> kcal</span></p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-function ProfileSetup({onSave, userId}) {
-  const D = { xs:"13px",sm:"15px",md:"17px",lg:"20px",xl:"24px" };
-  const [form,setForm] = useState({name:"",weight:"",height:""});
-  const [saving,setSaving] = useState(false);
-  const valid = form.name&&+form.weight>0&&+form.height>0;
-  const bmi = form.weight&&form.height?(+form.weight/((+form.height/100)**2)).toFixed(1):null;
-  const prot = form.weight?Math.round(+form.weight*2):null;
-  const handleSave = async () => { setSaving(true); const perfil={name:form.name,weight:+form.weight,height:+form.height}; await savePerfil(userId, perfil); onSave(perfil); setSaving(false); };
-  const inp = {width:"100%",background:"rgba(255,255,255,0.5)",border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"12px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
-  const lbl = {display:"block",fontSize:D.sm,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
-  return (
-    <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-      <div style={{...glassCard,padding:36,maxWidth:420,width:"100%"}}>
-        <div style={{textAlign:"center",marginBottom:30}}>
-          <div style={{fontSize:44,marginBottom:12}}>🌿</div>
-          <h1 style={{margin:0,fontSize:D.xl,fontWeight:300,color:G.text,letterSpacing:"-0.02em"}}>NutriQuest</h1>
-          <p style={{margin:"8px 0 0",fontSize:D.sm,color:G.hint,letterSpacing:"0.03em"}}>TU COMPAÑERO NUTRICIONAL</p>
-        </div>
-        <label style={lbl}>Nombre</label>
-        <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Tu nombre" style={inp}/>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-          <div><label style={lbl}>Peso (kg)</label><input type="number" min="30" max="200" value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} placeholder="70" style={inp}/></div>
-          <div><label style={lbl}>Altura (cm)</label><input type="number" min="100" max="230" value={form.height} onChange={e=>setForm(f=>({...f,height:e.target.value}))} placeholder="175" style={inp}/></div>
-        </div>
-        {prot&&(
-          <div style={{background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:10,padding:"14px 16px",marginBottom:16}}>
-            <div style={{display:"flex",justifyContent:"space-between"}}>
-              <div><p style={{margin:0,color:G.hint,fontSize:D.sm,letterSpacing:"0.04em"}}>META DE PROTEÍNA</p><p style={{margin:"4px 0 0",fontSize:D.xl,fontWeight:600,color:G.sage}}>{prot}g<span style={{fontSize:D.sm,fontWeight:400,color:G.hint}}>/día</span></p></div>
-              {bmi&&<div style={{textAlign:"right"}}><p style={{margin:0,color:G.hint,fontSize:D.sm,letterSpacing:"0.04em"}}>IMC</p><p style={{margin:"4px 0 0",fontSize:D.xl,fontWeight:600,color:G.sage}}>{bmi}</p></div>}
-            </div>
-            <p style={{margin:"8px 0 0",fontSize:D.sm,color:G.hint}}>Calculado como 2g × kg de peso corporal</p>
-          </div>
-        )}
-        <Btn onClick={handleSave} full disabled={!valid} loading={saving}>Comenzar</Btn>
+        {profile.tdee&&<div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
+          <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>CALORÍAS DIARIAS</p>
+          <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{profile.tdee.toLocaleString()}<span style={{fontSize:12,fontWeight:400,color:G.hint}}> kcal</span></p>
+        </div>}
       </div>
     </div>
   );
@@ -572,7 +386,7 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
   const scoreDays = data.filter(d=>d.score!=null);
   const avgScore = scoreDays.length?(scoreDays.reduce((a,d)=>a+d.score,0)/scoreDays.length).toFixed(1):"—";
   const avgProt = Math.round(data.reduce((a,d)=>a+d.prot,0)/Math.max(data.length,1));
-  const targetPerWeek=3, weeksInPeriod=period==="week"?1:period==="month"?4:52;
+  const targetPerWeek=3,weeksInPeriod=period==="week"?1:period==="month"?4:52;
   const targetTotal = targetPerWeek*weeksInPeriod;
   const totalWorkouts = period==="year"?data.reduce((a,d)=>a+(d.workouts||0),0):data.filter(d=>d.workout).length;
   const volumePct = Math.min(100,Math.round((totalWorkouts/targetTotal)*100));
@@ -587,21 +401,15 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
   const calDays=Array.from({length:30},(_,i)=>{const d=new Date();d.setDate(d.getDate()-29+i);const day=days[getKey(d)];return day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);});
   const gap = period==="month"?1:3;
   const PeriodBtn = ({id,label}) => <button onClick={()=>setPeriod(id)} style={{padding:"7px 16px",borderRadius:99,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:D.sm,fontWeight:period===id?600:400,background:period===id?"rgba(90,122,84,0.2)":"transparent",color:period===id?G.sage:G.hint}}>{label}</button>;
-
   return (
     <div>
       <div style={{...glassSubtle,display:"flex",justifyContent:"center",gap:4,padding:"4px",borderRadius:99,marginBottom:16}}>
-        <PeriodBtn id="week" label="Semana"/>
-        <PeriodBtn id="month" label="Mes"/>
-        <PeriodBtn id="year" label="Año"/>
+        <PeriodBtn id="week" label="Semana"/><PeriodBtn id="month" label="Mes"/><PeriodBtn id="year" label="Año"/>
       </div>
       <div style={{...glassCard,padding:20,marginBottom:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
           <p style={{margin:0,fontSize:D.md,fontWeight:500,color:G.text}}>Proteína & Puntaje</p>
-          <div style={{display:"flex",gap:12,fontSize:D.sm,color:G.hint}}>
-            <span>Score <strong style={{color:G.sage}}>{avgScore}</strong></span>
-            <span>Prot <strong style={{color:G.gold}}>{avgProt}g</strong></span>
-          </div>
+          <div style={{display:"flex",gap:12,fontSize:D.sm,color:G.hint}}><span>Score <strong style={{color:G.sage}}>{avgScore}</strong></span><span>Prot <strong style={{color:G.gold}}>{avgProt}g</strong></span></div>
         </div>
         <div style={{display:"flex",alignItems:"flex-end",height:60,gap}}>{data.map(d=>{const h=d.prot?Math.round((d.prot/maxProt)*56):2;return <div key={d.key} style={{flex:1,height:h,background:G.goldLight,borderTop:`2px solid ${G.gold}`,borderRadius:"3px 3px 0 0",alignSelf:"flex-end"}}/>;})}</div>
         <div style={{display:"flex",gap,marginTop:4}}>{data.map((d,i)=>(period==="week"||period==="year"||(period==="month"&&i%5===0))?<div key={d.key} style={{flex:1,textAlign:"center"}}><span style={{fontSize:11,color:G.hint}}>{d.label}</span></div>:<div key={d.key} style={{flex:1}}/>)}</div>
@@ -636,15 +444,7 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
       </div>
       <div style={{...glassCard,padding:20,marginBottom:12}}>
         <p style={{margin:"0 0 12px",fontSize:D.md,fontWeight:500,color:G.text}}>Coherencia nutrición-entreno</p>
-        {avgCoherence?(
-          <div style={{display:"flex",alignItems:"center",gap:16}}>
-            <div style={{textAlign:"center"}}><p style={{margin:0,fontSize:38,fontWeight:300,color:G.sage,lineHeight:1}}>{avgCoherence}</p><p style={{margin:"4px 0 0",fontSize:D.sm,color:G.hint}}>promedio</p></div>
-            <div style={{flex:1}}>
-              <div style={{background:"rgba(255,255,255,0.3)",borderRadius:99,height:6,overflow:"hidden",marginBottom:8}}><div style={{width:`${(avgCoherence/10)*100}%`,background:G.sage,height:"100%",borderRadius:99,opacity:0.8}}/></div>
-              <p style={{margin:0,fontSize:D.sm,color:G.hint}}>{avgCoherence>=8?"Excelente sincronía entre lo que comés y entrenás":avgCoherence>=6?"Buena coherencia, hay margen para mejorar":"Revisá la relación entre tus comidas y entrenamientos"}</p>
-            </div>
-          </div>
-        ):<p style={{margin:0,fontSize:D.md,color:G.hint,fontStyle:"italic"}}>Registrá entrenamientos para ver este índice.</p>}
+        {avgCoherence?<div style={{display:"flex",alignItems:"center",gap:16}}><div style={{textAlign:"center"}}><p style={{margin:0,fontSize:38,fontWeight:300,color:G.sage,lineHeight:1}}>{avgCoherence}</p><p style={{margin:"4px 0 0",fontSize:D.sm,color:G.hint}}>promedio</p></div><div style={{flex:1}}><div style={{background:"rgba(255,255,255,0.3)",borderRadius:99,height:6,overflow:"hidden",marginBottom:8}}><div style={{width:`${(avgCoherence/10)*100}%`,background:G.sage,height:"100%",borderRadius:99,opacity:0.8}}/></div><p style={{margin:0,fontSize:D.sm,color:G.hint}}>{avgCoherence>=8?"Excelente sincronía entre lo que comés y entrenás":avgCoherence>=6?"Buena coherencia, hay margen para mejorar":"Revisá la relación entre tus comidas y entrenamientos"}</p></div></div>:<p style={{margin:0,fontSize:D.md,color:G.hint,fontStyle:"italic"}}>Registrá entrenamientos para ver este índice.</p>}
       </div>
       <div style={{...glassCard,padding:20,marginBottom:12}}>
         <p style={{margin:"0 0 12px",fontSize:D.md,fontWeight:500,color:G.text}}>Racha de consistencia</p>
@@ -657,50 +457,32 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
         <p style={{margin:"8px 0 0",fontSize:D.sm,color:G.hint}}>Últimos 30 días — verde = día activo</p>
       </div>
       <Btn onClick={fetchWeekSummary} loading={weekSummaryLoading} full>Resumen semanal con IA</Btn>
-      {weekSummary&&(
-        <div style={{...glassCard,padding:20,marginTop:12}}>
-          {[["Mejor día",G.sage,weekSummary.best_day],["Peor día",G.red,weekSummary.worst_day],["Logro",G.text,weekSummary.achievement],["Próximo desafío",G.text,weekSummary.challenge]].map(([k,c,v])=>(
-            <div key={k} style={{marginBottom:14}}><p style={{margin:"0 0 3px",fontSize:D.sm,color:G.hint,letterSpacing:"0.04em"}}>{k.toUpperCase()}</p><p style={{margin:0,fontSize:D.md,color:c,fontWeight:500}}>{v}</p></div>
-          ))}
-          <div style={{background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:10,padding:"14px 16px",marginTop:4,color:G.sage,fontSize:D.md,fontStyle:"italic"}}>{weekSummary.motivation}</div>
-        </div>
-      )}
+      {weekSummary&&<div style={{...glassCard,padding:20,marginTop:12}}>{[["Mejor día",G.sage,weekSummary.best_day],["Peor día",G.red,weekSummary.worst_day],["Logro",G.text,weekSummary.achievement],["Próximo desafío",G.text,weekSummary.challenge]].map(([k,c,v])=><div key={k} style={{marginBottom:14}}><p style={{margin:"0 0 3px",fontSize:D.sm,color:G.hint,letterSpacing:"0.04em"}}>{k.toUpperCase()}</p><p style={{margin:0,fontSize:D.md,color:c,fontWeight:500}}>{v}</p></div>)}<div style={{background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:10,padding:"14px 16px",marginTop:4,color:G.sage,fontSize:D.md,fontStyle:"italic"}}>{weekSummary.motivation}</div></div>}
       <button onClick={()=>setShowRanking(r=>!r)} style={{width:"100%",marginTop:12,padding:"10px",borderRadius:10,border:`1px solid ${G.borderSubtle}`,background:"rgba(255,255,255,0.2)",color:G.hint,cursor:"pointer",fontSize:D.sm,fontFamily:"inherit",backdropFilter:blurSm,WebkitBackdropFilter:blurSm}}>{showRanking?"Ocultar":"Ver"} ranking personal</button>
       {showRanking&&<WeekRanking days={days} D={D}/>}
     </div>
   );
 }
 
-// ── Main App ───────────────────────────────────────────────────────────────
 export default function App() {
   const isDesktop = useIsDesktop();
   const D = {
-    xs: isDesktop?"16px":"12px",
-    sm: isDesktop?"19px":"13px",
-    md: isDesktop?"22px":"15px",
-    lg: isDesktop?"26px":"18px",
-    xl: isDesktop?"34px":"22px",
+    xs:isDesktop?"16px":"12px",sm:isDesktop?"19px":"13px",md:isDesktop?"22px":"15px",
+    lg:isDesktop?"26px":"18px",xl:isDesktop?"34px":"22px",
   };
   const inp = {width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"12px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
   const lbl = {display:"block",fontSize:D.sm,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
 
-  // ── Auth state ──────────────────────────────────────────────────────────
-  const [session, setSession] = useState(null);
-  const [sessionLoading, setSessionLoading] = useState(true);
+  const [session,setSession] = useState(null);
+  const [sessionLoading,setSessionLoading] = useState(true);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setSessionLoading(false);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+  useEffect(()=>{
+    supabase.auth.getSession().then(({data:{session}})=>{setSession(session);setSessionLoading(false);});
+    const {data:{subscription}} = supabase.auth.onAuthStateChange((_event,session)=>{setSession(session);});
+    return ()=>subscription.unsubscribe();
+  },[]);
 
-  // USER_ID: UUID real para usuarios autenticados, "gabo" para legacy
-  const USER_ID = session?.user?.id ?? "gabo";
+  const USER_ID = session?.user?.id??"gabo";
 
   const [tab,setTab] = useState("today");
   const [profile,setProfile] = useState(null);
@@ -727,12 +509,8 @@ export default function App() {
 
   useEffect(()=>{
     if (sessionLoading) return;
-    (async()=>{
-      setLoading(true);
-      const[p,d]=await Promise.all([loadPerfil(USER_ID),loadAllDays(USER_ID)]);
-      setProfile(p);setDays(d);setLoading(false);
-    })();
-  },[USER_ID, sessionLoading]);
+    (async()=>{setLoading(true);const[p,d]=await Promise.all([loadPerfil(USER_ID),loadAllDays(USER_ID)]);setProfile(p);setDays(d);setLoading(false);})();
+  },[USER_ID,sessionLoading]);
 
   useEffect(()=>{lsSave("nq_xp",xp);},[xp]);
   useEffect(()=>{lsSave("nq_badges",badges);},[badges]);
@@ -745,7 +523,7 @@ export default function App() {
   const updateToday = async (patch) => {
     const updated = {...todayData,...patch};
     setDays(prev=>({...prev,[today]:updated}));
-    await saveDay(USER_ID, today, updated);
+    await saveDay(USER_ID,today,updated);
     const s = calcStreak({...days,[today]:updated});
     setStreak(s); lsSave("nq_streak",s);
   };
@@ -756,12 +534,12 @@ export default function App() {
     if (isMeal) {
       const meal = fromDay.meals[slotId]; if (!meal) return;
       const newFromMeals = {...fromDay.meals}; delete newFromMeals[slotId];
-      await saveDay(USER_ID, today,{...fromDay,meals:newFromMeals});
-      await saveDay(USER_ID, targetDate,{...toDay,meals:{...toDay.meals,[slotId]:meal}});
+      await saveDay(USER_ID,today,{...fromDay,meals:newFromMeals});
+      await saveDay(USER_ID,targetDate,{...toDay,meals:{...toDay.meals,[slotId]:meal}});
     } else {
       const snack = (fromDay.snacks||[])[snackIndex]; if (!snack) return;
-      await saveDay(USER_ID, today,{...fromDay,snacks:(fromDay.snacks||[]).filter((_,i)=>i!==snackIndex)});
-      await saveDay(USER_ID, targetDate,{...toDay,snacks:[...(toDay.snacks||[]),snack]});
+      await saveDay(USER_ID,today,{...fromDay,snacks:(fromDay.snacks||[]).filter((_,i)=>i!==snackIndex)});
+      await saveDay(USER_ID,targetDate,{...toDay,snacks:[...(toDay.snacks||[]),snack]});
     }
     const [,d] = await Promise.all([loadPerfil(USER_ID),loadAllDays(USER_ID)]); setDays(d);
   };
@@ -773,8 +551,8 @@ export default function App() {
     if (targetDate&&targetDate!==today) {
       const toDay = days[targetDate]||{meals:{},snacks:[],workout:null};
       const newFrom = {...todayData.meals}; delete newFrom[slotId];
-      await saveDay(USER_ID, today,{...todayData,meals:newFrom});
-      await saveDay(USER_ID, targetDate,{...toDay,meals:{...toDay.meals,[slotId]:meal}});
+      await saveDay(USER_ID,today,{...todayData,meals:newFrom});
+      await saveDay(USER_ID,targetDate,{...toDay,meals:{...toDay.meals,[slotId]:meal}});
       const [,d] = await Promise.all([loadPerfil(USER_ID),loadAllDays(USER_ID)]); setDays(d);
     } else { await updateToday({meals:{...todayData.meals,[slotId]:meal}}); }
   };
@@ -834,30 +612,21 @@ export default function App() {
     setWeekSummaryLoading(false);
   };
 
-  // ── Pantalla de carga de sesión ─────────────────────────────────────────
   if (sessionLoading) return (
     <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <div style={{textAlign:"center",color:G.muted}}>
-        <div style={{fontSize:44,marginBottom:14}}>🌿</div>
-        <p style={{fontSize:18,letterSpacing:"0.04em"}}>Cargando…</p>
-      </div>
+      <div style={{textAlign:"center",color:G.muted}}><div style={{fontSize:44,marginBottom:14}}>🌿</div><p style={{fontSize:18,letterSpacing:"0.04em"}}>Cargando…</p></div>
     </div>
   );
 
-  // ── Pantalla de login ───────────────────────────────────────────────────
-  if (!session) return <AuthScreen />;
+  if (!session) return <AuthScreen/>;
 
-  // ── Pantalla de carga de datos ──────────────────────────────────────────
   if (loading) return (
     <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <div style={{textAlign:"center",color:G.muted}}>
-        <div style={{fontSize:44,marginBottom:14}}>🌿</div>
-        <p style={{fontSize:18,letterSpacing:"0.04em"}}>Cargando…</p>
-      </div>
+      <div style={{textAlign:"center",color:G.muted}}><div style={{fontSize:44,marginBottom:14}}>🌿</div><p style={{fontSize:18,letterSpacing:"0.04em"}}>Cargando…</p></div>
     </div>
   );
 
-  if (!profile || !profile.onboarded) return <Onboarding onSave={async (perfil) => { await savePerfil(USER_ID, perfil); setProfile(perfil); }} userId={USER_ID}/>;
+  if (!profile||!profile.onboarded) return <Onboarding onSave={async(perfil)=>{await savePerfil(USER_ID,perfil);setProfile(perfil);}} userId={USER_ID}/>;
 
   const proteinGoal = Math.round(profile.weight*2);
   const todayProt = [...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.protein_g||0),0);
