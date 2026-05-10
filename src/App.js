@@ -300,24 +300,37 @@ function WeekRanking({days,D}) {
 
 function ProfilePanel({profile,onUpdate,userId,D}) {
   const [editing,setEditing] = useState(false);
-  const [form,setForm] = useState({name:profile.name,weight:profile.weight,height:profile.height});
+  const [form,setForm] = useState({name:profile.name,weight:profile.weight,height:profile.height,age:profile.age||"",sex:profile.sex||"",activity:profile.activity||""});
+
   const bmi = (profile.weight/((profile.height/100)**2)).toFixed(1);
   const protGoal = Math.round(profile.weight*2);
+
+  const GOAL_LABELS = {
+    comer_mejor:"🥗 Comer mejor",
+    energia:"⚡ Más energía",
+    musculo:"💪 Ganar músculo",
+    bajar_peso:"⚖️ Bajar de peso",
+    verme_mejor:"✨ Verme mejor",
+  };
+
   const inp = {width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"11px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
   const lbl = {display:"block",fontSize:D.sm,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
+
   const handleSave = async () => {
     if (!form.name||!+form.weight||!+form.height) return;
-    const updated = {name:form.name,weight:+form.weight,height:+form.height};
-    await savePerfil(userId, updated); onUpdate(updated); setEditing(false);
+    const updated = {...profile,name:form.name,weight:+form.weight,height:+form.height,age:+form.age||profile.age,sex:form.sex||profile.sex,activity:form.activity||profile.activity};
+    await savePerfil(userId,updated); onUpdate(updated); setEditing(false);
   };
+
   if (editing) return (
     <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
       <p style={{margin:"0 0 14px",fontSize:D.lg,fontWeight:600,color:G.text}}>Editar perfil</p>
       <label style={lbl}>Nombre</label>
       <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} style={inp}/>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
         <div><label style={lbl}>Peso (kg)</label><input type="number" value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} style={inp}/></div>
         <div><label style={lbl}>Altura (cm)</label><input type="number" value={form.height} onChange={e=>setForm(f=>({...f,height:e.target.value}))} style={inp}/></div>
+        <div><label style={lbl}>Edad</label><input type="number" value={form.age} onChange={e=>setForm(f=>({...f,age:e.target.value}))} style={inp}/></div>
       </div>
       {form.weight&&form.height&&<div style={{background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:8,padding:"10px 14px",fontSize:D.sm,color:G.sage,marginBottom:10}}>Meta proteína: <strong>{Math.round(+form.weight*2)}g/día</strong> · IMC: {(+form.weight/((+form.height/100)**2)).toFixed(1)}</div>}
       <div style={{display:"flex",gap:8}}>
@@ -326,23 +339,45 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
       </div>
     </div>
   );
+
   return (
-    <div style={{...glassCard,padding:"16px 20px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-      <div style={{display:"flex",gap:14,alignItems:"center"}}>
-        <div style={{width:42,height:42,borderRadius:"50%",background:G.sageLight,border:`1px solid ${G.sageBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🌿</div>
-        <div>
-          <p style={{margin:0,fontSize:D.md,fontWeight:600,color:G.text}}>{profile.name}</p>
-          <p style={{margin:"3px 0 0",fontSize:D.sm,color:G.hint}}>{profile.weight}kg · {profile.height}cm · IMC {bmi}</p>
+    <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
+        <div style={{display:"flex",gap:12,alignItems:"center"}}>
+          <div style={{width:42,height:42,borderRadius:"50%",background:G.sageLight,border:`1px solid ${G.sageBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🌿</div>
+          <div>
+            <p style={{margin:0,fontSize:D.md,fontWeight:600,color:G.text}}>{profile.name}</p>
+            <p style={{margin:"3px 0 0",fontSize:D.sm,color:G.hint}}>{profile.weight}kg · {profile.height}cm · IMC {bmi}</p>
+          </div>
         </div>
+        <button onClick={()=>setEditing(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:G.hint,fontFamily:"inherit"}}>editar</button>
       </div>
-      <div style={{textAlign:"right"}}>
-        <p style={{margin:0,fontSize:D.xl,fontWeight:600,color:G.sage}}>{protGoal}<span style={{fontSize:D.sm,color:G.hint,fontWeight:400}}> g prot</span></p>
-        <button onClick={()=>setEditing(true)} style={{background:"none",border:"none",cursor:"pointer",fontSize:D.sm,color:G.hint,padding:0,fontFamily:"inherit",marginTop:3}}>editar</button>
+
+      {(profile.goals||[]).length>0&&(
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+          {(profile.goals||[]).map(g=>(
+            <span key={g} style={{fontSize:12,background:G.sageLight,color:G.sage,border:`1px solid ${G.sageBorder}`,padding:"4px 10px",borderRadius:99,fontWeight:500}}>
+              {GOAL_LABELS[g]||g}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div style={{background:"rgba(255,255,255,0.35)",borderRadius:10,padding:"10px 14px"}}>
+          <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>META DE PROTEÍNA</p>
+          <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{protGoal}g<span style={{fontSize:12,fontWeight:400,color:G.hint}}>/día</span></p>
+        </div>
+        {profile.tdee&&(
+          <div style={{background:"rgba(255,255,255,0.35)",borderRadius:10,padding:"10px 14px"}}>
+            <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>CALORÍAS DIARIAS</p>
+            <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{profile.tdee.toLocaleString()}<span style={{fontSize:12,fontWeight:400,color:G.hint}}> kcal</span></p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
 function ProfileSetup({onSave, userId}) {
   const D = { xs:"13px",sm:"15px",md:"17px",lg:"20px",xl:"24px" };
   const [form,setForm] = useState({name:"",weight:"",height:""});
