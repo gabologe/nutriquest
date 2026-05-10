@@ -15,6 +15,15 @@ const G={
   bg1:"#c8d8c4",bg2:"#e8e0d0",bg3:"#d4cabb",
 };
 const blur="blur(14px)",blurSm="blur(8px)";
+const isDesktop=window.innerWidth>=768;
+const fs={
+  xs:  isDesktop?"13px":"11px",
+  sm:  isDesktop?"15px":"13px",
+  md:  isDesktop?"17px":"15px",
+  lg:  isDesktop?"20px":"17px",
+  xl:  isDesktop?"24px":"20px",
+  tag: isDesktop?"14px":"13px",
+};
 const LEVELS=[
   {name:"Novato",emoji:"🌱",xp:0},{name:"Aprendiz",emoji:"🌿",xp:200},
   {name:"Consciente",emoji:"🍃",xp:500},{name:"Atleta",emoji:"🌾",xp:1000},{name:"Leyenda",emoji:"🌳",xp:2000},
@@ -71,8 +80,8 @@ async function callAI(prompt,system){
 
 const glassCard={background:G.glass,backdropFilter:blur,WebkitBackdropFilter:blur,border:`1px solid ${G.border}`,borderRadius:18};
 const glassSubtle={background:G.glassDark,backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.borderSubtle}`,borderRadius:12};
-const inp={width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"11px 14px",fontSize:16,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
-const lbl={display:"block",fontSize:13,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
+const inp={width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"11px 14px",fontSize:isDesktop?18:16,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
+const lbl={display:"block",fontSize:isDesktop?15:13,,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
 
 function Btn({onClick,loading,children,full,disabled}){
   return(
@@ -95,7 +104,7 @@ function Btn({onClick,loading,children,full,disabled}){
   );
 }
 function Tag({color,bg,border,children}){
-  return <span style={{fontSize:13,background:bg||G.sageLight,color:color||G.sage,border:`1px solid ${border||G.sageBorder}`,padding:"4px 10px",borderRadius:99,fontWeight:500,letterSpacing:"0.02em"}}>{children}</span>;
+  return <span style={{fontSize:isDesktop?14:13,background:bg||G.sageLight,color:color||G.sage,border:`1px solid ${border||G.sageBorder}`,padding:"4px 10px",borderRadius:99,fontWeight:500,letterSpacing:"0.02em"}}>{children}</span>;
 }
 function Divider(){return <div style={{height:"1px",background:"rgba(255,255,255,0.4)",margin:"0 18px"}}/>;}
 function Confetti({active}){
@@ -584,8 +593,8 @@ export default function App(){
       <div style={{maxWidth:640,margin:"0 auto",padding:"20px 24px"}}>
 
         <div style={{textAlign:"center",marginBottom:20}}>
-          <h1 style={{margin:"0 0 3px",fontSize:22,fontWeight:300,color:G.text,letterSpacing:"0.02em"}}>🌿 NutriQuest</h1>
-          <p style={{margin:0,fontSize:13,color:G.hint,letterSpacing:"0.06em"}}>{new Date().toLocaleDateString("es",{weekday:"long",day:"numeric",month:"long",timeZone:"America/Argentina/Buenos_Aires"})}</p>
+          <h1 style={{margin:"0 0 3px",fontSize:isDesktop?28:22,fontWeight:300,color:G.text,letterSpacing:"0.02em"}}>🌿 NutriQuest</h1>
+          <p style={{margin:0,fontSize:isDesktop?15:13,color:G.hint,letterSpacing:"0.06em"}}>{new Date().toLocaleDateString("es",{weekday:"long",day:"numeric",month:"long",timeZone:"America/Argentina/Buenos_Aires"})}</p>
         </div>
 
         <ProfilePanel profile={profile} onUpdate={setProfile}/>
