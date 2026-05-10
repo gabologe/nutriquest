@@ -425,11 +425,11 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
 export default function App() {
   const isDesktop = useIsDesktop();
   const D = {
-    xs: isDesktop?"14px":"12px",
-    sm: isDesktop?"16px":"13px",
-    md: isDesktop?"18px":"15px",
-    lg: isDesktop?"22px":"18px",
-    xl: isDesktop?"28px":"22px",
+    xs: isDesktop?"16px":"12px",
+    sm: isDesktop?"19px":"13px",
+    md: isDesktop?"22px":"15px",
+    lg: isDesktop?"26px":"18px",
+    xl: isDesktop?"34px":"22px",
   };
   const inp = {width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"12px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
   const lbl = {display:"block",fontSize:D.sm,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
