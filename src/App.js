@@ -353,7 +353,7 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
             <p style={{margin:"3px 0 0",fontSize:D.sm,color:G.hint}}>{profile.weight}kg · {profile.height}cm · IMC {bmi}{profile.age?` · ${profile.age} años`:""}</p>
           </div>
         </div>
-        <button onClick={()=>setEditing(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:G.hint,fontFamily:"inherit",flexShrink:0}}>editar</button>
+        <button onClick={()=>setEditingGoals(e=>!e)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:editingGoals?G.sage:G.hint,fontFamily:"inherit"}}>
       </div>
 
       {/* Cards proteína y calorías */}
