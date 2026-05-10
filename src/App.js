@@ -579,6 +579,95 @@ function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showR
   );
 }
 
+function PlanTab({todayData,profile,D}) {
+  const [plan,setPlan]=useState(null);
+  const [loading,setLoading]=useState(false);
+
+  const missingSlots=FIXED_SLOTS.filter(s=>!todayData.meals?.[s.id]);
+  const hasSnacks=(todayData.snacks||[]).length>0;
+
+  const consumedCal=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.calories||m.protein_g*4||0),0);
+  const consumedProt=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.protein_g||0),0);
+  const remainingCal=profile?.tdee?(profile.tdee-consumedCal):null;
+  const remainingProt=profile?.weight?(Math.round(profile.weight*2)-consumedProt):null;
+  const isExceeded=remainingCal!==null&&remainingCal<0;
+
+  const userGoals=(profile?.goals||[]).map(g=>({
+    comer_mejor:"comer de forma más saludable",
+    energia:"tener más energía",
+    musculo:"ganar músculo",
+    bajar_peso:"bajar de peso",
+    verme_mejor:"verme mejor",
+  }[g]||g)).join(", ");
+
+  const handleGenerate=async()=>{
+    setLoading(true);
+    const pendingSlots=missingSlots.map(s=>s.label).join(", ")||"ninguno";
+    const alreadyEaten=Object.values(todayData.meals||{}).map(m=>m.desc).concat((todayData.snacks||[]).map(s=>s.desc)).join("; ")||"nada todavía";
+
+    const prompt=isExceeded
+      ? `El usuario ya excedió sus calorías diarias (consumió ${Math.round(consumedCal)} de ${profile.tdee} kcal). Ya comió: ${alreadyEaten}. Sus objetivos son: ${userGoals}. Le faltan estos momentos del día: ${pendingSlots}. Sugiere opciones muy livianas y nutritivas para terminar el día de forma inteligente, sin hacerlo sentir mal. Tono empático y positivo. Devuelve SOLO JSON: { slots: [{slot, sugerencia, motivo}], mensaje_motivacional }`
+      : `El usuario lleva ${Math.round(consumedCal)} kcal y ${Math.round(consumedProt)}g de proteína consumidas hoy. Le quedan aproximadamente ${Math.round(remainingCal||0)} kcal y ${Math.round(remainingProt||0)}g de proteína para cumplir sus metas. Ya comió: ${alreadyEaten}. Sus objetivos son: ${userGoals}. Le faltan estos momentos del día: ${pendingSlots}. Sugiere qué comer en cada momento restante para que cierre el día bien según sus objetivos. Devuelve SOLO JSON: { slots: [{slot, sugerencia, motivo}], mensaje_motivacional }`;
+
+    try {
+      const result=await callAI(prompt,"Eres un nutricionista empático y experto. Responde SOLO con JSON válido, sin texto adicional.");
+      setPlan(result);
+    } catch {alert("Error al generar el plan. Intentá de nuevo.");}
+    setLoading(false);
+  };
+
+  return (
+    <div>
+      <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <p style={{margin:0,fontSize:D.md,fontWeight:500,color:G.text}}>Plan de hoy</p>
+          {missingSlots.length===0
+            ? <span style={{fontSize:12,color:G.sage,fontWeight:500}}>✓ Día completo</span>
+            : <span style={{fontSize:12,color:G.hint}}>{missingSlots.length} comida{missingSlots.length!==1?"s":""} pendiente{missingSlots.length!==1?"s":""}</span>
+          }
+        </div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+          {FIXED_SLOTS.map(s=>{
+            const done=!!todayData.meals?.[s.id];
+            return (
+              <div key={s.id} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,background:done?"rgba(90,122,84,0.12)":"rgba(255,255,255,0.3)",border:`1px solid ${done?G.sage:G.borderSubtle}`}}>
+                <span style={{fontSize:14}}>{s.emoji}</span>
+                <span style={{fontSize:12,color:done?G.sage:G.hint,fontWeight:done?500:400}}>{s.label}</span>
+                {done&&<span style={{fontSize:10,color:G.sage}}>✓</span>}
+              </div>
+            );
+          })}
+        </div>
+        {isExceeded&&(
+          <div style={{background:G.redLight,border:`1px solid rgba(180,80,80,0.25)`,borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:D.sm,color:G.red}}>
+            Superaste las calorías de hoy — igual te sugerimos opciones livianas para terminar bien el día 💚
+          </div>
+        )}
+        <Btn onClick={handleGenerate} loading={loading} full>
+          {plan?"Actualizar plan":"Generar plan"}
+        </Btn>
+      </div>
+
+      {plan&&(
+        <div>
+          {plan.mensaje_motivacional&&(
+            <div style={{...glassCard,padding:"16px 20px",marginBottom:12,background:"rgba(90,122,84,0.08)"}}>
+              <p style={{margin:0,fontSize:D.md,color:G.sage,fontStyle:"italic",lineHeight:1.6}}>💚 {plan.mensaje_motivacional}</p>
+            </div>
+          )}
+          {(plan.slots||[]).map((item,i)=>(
+            <div key={i} style={{...glassCard,padding:"16px 20px",marginBottom:10}}>
+              <p style={{margin:"0 0 6px",fontSize:D.sm,color:G.hint,letterSpacing:"0.04em",textTransform:"uppercase"}}>{item.slot}</p>
+              <p style={{margin:"0 0 8px",fontSize:D.md,fontWeight:500,color:G.text,lineHeight:1.5}}>{item.sugerencia}</p>
+              <p style={{margin:0,fontSize:D.sm,color:G.muted,lineHeight:1.5}}>{item.motivo}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   const isDesktop=useIsDesktop();
   const D={
@@ -842,13 +931,13 @@ export default function App() {
         )}
 
         {tab==="plan"&&(
-          <div style={{...glassCard,padding:32,textAlign:"center"}}>
-            <p style={{fontSize:40,marginBottom:16}}>🗓️</p>
-            <p style={{margin:"0 0 8px",fontSize:D.lg,fontWeight:500,color:G.text}}>Plan semanal</p>
-            <p style={{margin:0,fontSize:D.md,color:G.muted,lineHeight:1.6}}>Próximamente la IA generará un plan de comidas personalizado basado en tus objetivos e historial.</p>
-          </div>
+          <PlanTab
+            todayData={todayData}
+            profile={profile}
+            D={D}
+          />
         )}
-
+              
       </div>
     </div>
   );
