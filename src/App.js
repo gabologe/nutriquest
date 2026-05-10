@@ -661,7 +661,8 @@ export default function App() {
     const desc=mealInputs[slotId];if (!desc?.trim()) return;
     setMealLoading(l=>({...l,[slotId]:true}));
     try {
-      const result=await callAI(`Analiza esta comida: "${desc}". Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), hypertrophy ("excelente"|"bueno"|"moderado"|"bajo"), nutrients ([{name,benefit}] máx 4), tip (string breve).`,"Eres un nutricionista experto. Responde SOLO con JSON válido, sin texto adicional.");
+      const userGoals=(profile?.goals||[]).map(g=>({comer_mejor:"comer de forma más saludable",energia:"tener más energía",musculo:"ganar músculo",bajar_peso:"bajar de peso",verme_mejor:"verme mejor"}[g]||g)).join(", ");
+      const result=await callAI(`Analiza esta comida: "${desc}". El usuario tiene los siguientes objetivos: ${userGoals}. Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), hypertrophy ("excelente"|"bueno"|"moderado"|"bajo"), nutrients ([{name,benefit}] máx 4), tip (string breve personalizado según los objetivos del usuario).`,"Eres un nutricionista experto. Responde SOLO con JSON válido, sin texto adicional.");
       const meal={desc,...result,slot:slotId,label,timestamp:Date.now()};
       const newMeals={...todayData.meals,[slotId]:meal};
       await updateToday({meals:newMeals});
@@ -680,7 +681,7 @@ export default function App() {
     const desc=mealInputs["snack_new"];if (!desc?.trim()||!snackName?.trim()) return;
     setMealLoading(l=>({...l,snack_new:true}));
     try {
-      const result=await callAI(`Analiza este tentempié "${snackName}": "${desc}". Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), hypertrophy ("excelente"|"bueno"|"moderado"|"bajo"), nutrients ([{name,benefit}] máx 4), tip (string breve).`,"Eres un nutricionista experto. Responde SOLO con JSON válido.");
+      const userGoals=(profile?.goals||[]).map(g=>({comer_mejor:"comer de forma más saludable",energia:"tener más energía",musculo:"ganar músculo",bajar_peso:"bajar de peso",verme_mejor:"verme mejor"}[g]||g)).join(", "); const result=await callAI(`Analiza este tentempié "${snackName}": "${desc}". El usuario tiene los siguientes objetivos: ${userGoals}. Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), hypertrophy ("excelente"|"bueno"|"moderado"|"bajo"), nutrients ([{name,benefit}] máx 4), tip (string breve personalizado según los objetivos del usuario).`,"Eres un nutricionista experto. Responde SOLO con JSON válido.");
       await updateToday({snacks:[...(todayData.snacks||[]),{desc,name:snackName,...result,timestamp:Date.now()}]});
       setXp(x=>x+40+(result.score||0)*3);triggerConfetti();unlockBadge("first_meal");
       setMealInputs(i=>({...i,snack_new:""}));setSnackName("");
