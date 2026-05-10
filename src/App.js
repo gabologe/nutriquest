@@ -713,9 +713,10 @@ export default function App() {
           </div>
         )}
 
-        {tab==="today"&&tab==="workout"&&(
+        {tab==="today"&&(
+          <div style={{height:1,background:"rgba(255,255,255,0.3)",margin:"8px 0"}}/>
           <div style={{...glassCard,padding:22}}>
-            <p style={{margin:"0 0 18px",fontSize:D.lg,fontWeight:500,color:G.text}}>Entrenamiento de hoy</p>
+            <p style={{margin:"0 0 18px",fontSize:D.lg,fontWeight:500,color:G.text}}>🏋️ Entrenamiento de hoy</p>
             {todayData.workout?<WorkoutCard workout={todayData.workout} D={D}/>:(
               <div>
                 <label style={lbl}>Tipo</label>
@@ -732,7 +733,7 @@ export default function App() {
           </div>
         )}
 
-        {tab==="history"&&(
+        {tab==="progress"&&(
           <div>
             <input type="date" value={histDate} onChange={e=>setHistDate(e.target.value)} style={{...inp,marginBottom:16}}/>
             {(()=>{
@@ -786,11 +787,11 @@ export default function App() {
           </div>
         )}
 
-        {tab==="metrics"&&(
+        {tab==="progress"&&(
           <MetricsTab days={days} fetchWeekSummary={fetchWeekSummary} weekSummaryLoading={weekSummaryLoading} weekSummary={weekSummary} showRanking={showRanking} setShowRanking={setShowRanking} D={D}/>
         )}
 
-        {tab==="badges"&&(
+        {tab==="progress"&&(
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             {BADGES_DEF.map(b=>{
               const unlocked=badges.includes(b.id);
@@ -805,7 +806,17 @@ export default function App() {
             })}
           </div>
         )}
+        {tab==="plan"&&(
+          <div style={{...glassCard,padding:24,textAlign:"center"}}>
+            <p style={{fontSize:32,marginBottom:12}}>🗓️</p>
+            <p style={{margin:0,fontSize:D.md,color:G.muted}}>El plan semanal con IA estará disponible pronto.</p>
+          </div>
+        )}
 
+      </div>
+    </div>
+  );
+}
       </div>
     </div>
   );
