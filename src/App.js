@@ -5,7 +5,6 @@ const supabase = createClient(
   "https://pbxxevlzcezkmeyxsydn.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBieHhldmx6Y2V6a21leXhzeWRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNTI5MzcsImV4cCI6MjA5MzcyODkzN30.tsC-3kM9orTRdCPip84GdctDlXSSaOmv8UquELx-bR4"
 );
-const USER_ID = "gabo";
 
 const G = {
   glass:"rgba(255,255,255,0.55)",glassDark:"rgba(255,255,255,0.35)",glassSubtle:"rgba(255,255,255,0.25)",
@@ -50,8 +49,8 @@ function useIsDesktop() {
 }
 
 // ── Supabase helpers ───────────────────────────────────────────────────────
-async function loadAllDays() {
-  const {data,error} = await supabase.from("registros").select("*").eq("user_id",USER_ID);
+async function loadAllDays(userId) {
+  const {data,error} = await supabase.from("registros").select("*").eq("user_id",userId);
   if (error) { console.error(error); return {}; }
   const map = {};
   data.forEach(row => {
@@ -60,17 +59,17 @@ async function loadAllDays() {
   });
   return map;
 }
-async function loadPerfil() {
-  const {data,error} = await supabase.from("registros").select("perfil").eq("user_id",USER_ID).eq("fecha","perfil").maybeSingle();
+async function loadPerfil(userId) {
+  const {data,error} = await supabase.from("registros").select("perfil").eq("user_id",userId).eq("fecha","perfil").maybeSingle();
   if (error||!data) return null;
   return data.perfil;
 }
-async function savePerfil(perfil) {
-  await supabase.from("registros").upsert({user_id:USER_ID,fecha:"perfil",perfil},{onConflict:"user_id,fecha"});
+async function savePerfil(userId, perfil) {
+  await supabase.from("registros").upsert({user_id:userId,auth_user_id:userId,fecha:"perfil",perfil},{onConflict:"user_id,fecha"});
 }
-async function saveDay(fecha, dayData) {
+async function saveDay(userId, fecha, dayData) {
   await supabase.from("registros").upsert({
-    user_id:USER_ID, fecha,
+    user_id:userId, auth_user_id:userId, fecha,
     meals:dayData.meals||{}, snacks:dayData.snacks||[], workout:dayData.workout||null,
   },{onConflict:"user_id,fecha"});
 }
@@ -87,6 +86,79 @@ async function callAI(prompt, system) {
 // ── Shared styles (static) ─────────────────────────────────────────────────
 const glassCard = {background:G.glass,backdropFilter:blur,WebkitBackdropFilter:blur,border:`1px solid ${G.border}`,borderRadius:18};
 const glassSubtle = {background:G.glassDark,backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.borderSubtle}`,borderRadius:12};
+
+// ── Auth Screen ────────────────────────────────────────────────────────────
+function AuthScreen() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const inp = {width:"100%",background:"rgba(255,255,255,0.5)",border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"12px 14px",fontSize:16,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
+  const lbl = {display:"block",fontSize:13,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
+
+  const handleSubmit = async () => {
+    if (!email||!password) return;
+    setLoading(true);
+    setMessage("");
+    const { error } = isLogin
+      ? await supabase.auth.signInWithPassword({ email, password })
+      : await supabase.auth.signUp({ email, password });
+    if (error) setMessage(error.message);
+    else if (!isLogin) setMessage("Revisá tu email para confirmar tu cuenta.");
+    setLoading(false);
+  };
+
+  return (
+    <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{...glassCard,padding:36,maxWidth:400,width:"100%"}}>
+        <div style={{textAlign:"center",marginBottom:30}}>
+          <div style={{fontSize:44,marginBottom:12}}>🌿</div>
+          <h1 style={{margin:0,fontSize:28,fontWeight:300,color:G.text,letterSpacing:"-0.02em"}}>NutriQuest</h1>
+          <p style={{margin:"8px 0 0",fontSize:13,color:G.hint,letterSpacing:"0.03em"}}>TU COMPAÑERO NUTRICIONAL</p>
+        </div>
+
+        <label style={lbl}>Email</label>
+        <input
+          type="email"
+          value={email}
+          onChange={e=>setEmail(e.target.value)}
+          placeholder="tu@email.com"
+          style={inp}
+          onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
+        />
+
+        <label style={lbl}>Contraseña</label>
+        <input
+          type="password"
+          value={password}
+          onChange={e=>setPassword(e.target.value)}
+          placeholder="••••••••"
+          style={inp}
+          onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
+        />
+
+        {message && (
+          <div style={{background:message.includes("email")?G.sageLight:G.redLight,border:`1px solid ${message.includes("email")?G.sageBorder:"rgba(180,80,80,0.25)"}`,borderRadius:8,padding:"10px 14px",fontSize:14,color:message.includes("email")?G.sage:G.red,marginBottom:8}}>
+            {message}
+          </div>
+        )}
+
+        <div style={{marginTop:16}}>
+          <Btn onClick={handleSubmit} loading={loading} full>
+            {isLogin ? "Iniciar sesión" : "Registrarme"}
+          </Btn>
+        </div>
+
+        <p onClick={()=>{setIsLogin(l=>!l);setMessage("");}} style={{textAlign:"center",marginTop:20,fontSize:14,color:G.hint,cursor:"pointer",userSelect:"none"}}>
+          {isLogin ? "¿No tenés cuenta? " : "¿Ya tenés cuenta? "}
+          <span style={{color:G.sage,fontWeight:600}}>{isLogin ? "Registrate" : "Iniciá sesión"}</span>
+        </p>
+      </div>
+    </div>
+  );
+}
 
 // ── Shared components ──────────────────────────────────────────────────────
 function Btn({onClick,loading,children,full,disabled}) {
@@ -225,7 +297,7 @@ function WeekRanking({days,D}) {
   return <div style={{...glassSubtle,padding:18,marginTop:10,borderRadius:14}}><p style={{margin:"0 0 12px",fontSize:D.md,fontWeight:600,color:G.text}}>Mejores semanas</p>{ranked.slice(0,5).map((r,i)=><div key={r.wk} style={{display:"flex",justifyContent:"space-between",fontSize:D.sm,padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.3)"}}><span style={{color:G.muted}}>{["🥇","🥈","🥉","4","5"][i]} {r.wk}</span><span style={{color:G.sage,fontWeight:600}}>⭐ {r.score} · {r.days}d</span></div>)}</div>;
 }
 
-function ProfilePanel({profile,onUpdate,D}) {
+function ProfilePanel({profile,onUpdate,userId,D}) {
   const [editing,setEditing] = useState(false);
   const [form,setForm] = useState({name:profile.name,weight:profile.weight,height:profile.height});
   const bmi = (profile.weight/((profile.height/100)**2)).toFixed(1);
@@ -235,7 +307,7 @@ function ProfilePanel({profile,onUpdate,D}) {
   const handleSave = async () => {
     if (!form.name||!+form.weight||!+form.height) return;
     const updated = {name:form.name,weight:+form.weight,height:+form.height};
-    await savePerfil(updated); onUpdate(updated); setEditing(false);
+    await savePerfil(userId, updated); onUpdate(updated); setEditing(false);
   };
   if (editing) return (
     <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
@@ -270,14 +342,14 @@ function ProfilePanel({profile,onUpdate,D}) {
   );
 }
 
-function ProfileSetup({onSave}) {
+function ProfileSetup({onSave, userId}) {
   const D = { xs:"13px",sm:"15px",md:"17px",lg:"20px",xl:"24px" };
   const [form,setForm] = useState({name:"",weight:"",height:""});
   const [saving,setSaving] = useState(false);
   const valid = form.name&&+form.weight>0&&+form.height>0;
   const bmi = form.weight&&form.height?(+form.weight/((+form.height/100)**2)).toFixed(1):null;
   const prot = form.weight?Math.round(+form.weight*2):null;
-  const handleSave = async () => { setSaving(true); const perfil={name:form.name,weight:+form.weight,height:+form.height}; await savePerfil(perfil); onSave(perfil); setSaving(false); };
+  const handleSave = async () => { setSaving(true); const perfil={name:form.name,weight:+form.weight,height:+form.height}; await savePerfil(userId, perfil); onSave(perfil); setSaving(false); };
   const inp = {width:"100%",background:"rgba(255,255,255,0.5)",border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"12px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
   const lbl = {display:"block",fontSize:D.sm,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
   return (
@@ -434,6 +506,24 @@ export default function App() {
   const inp = {width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"12px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
   const lbl = {display:"block",fontSize:D.sm,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
 
+  // ── Auth state ──────────────────────────────────────────────────────────
+  const [session, setSession] = useState(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setSessionLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // USER_ID: UUID real para usuarios autenticados, "gabo" para legacy
+  const USER_ID = session?.user?.id ?? "gabo";
+
   const [tab,setTab] = useState("today");
   const [profile,setProfile] = useState(null);
   const [days,setDays] = useState({});
@@ -457,7 +547,15 @@ export default function App() {
   const today = todayStr();
   const todayData = days[today]||{meals:{},snacks:[],workout:null};
 
-  useEffect(()=>{(async()=>{setLoading(true);const[p,d]=await Promise.all([loadPerfil(),loadAllDays()]);setProfile(p);setDays(d);setLoading(false);})();},[]);
+  useEffect(()=>{
+    if (sessionLoading) return;
+    (async()=>{
+      setLoading(true);
+      const[p,d]=await Promise.all([loadPerfil(USER_ID),loadAllDays(USER_ID)]);
+      setProfile(p);setDays(d);setLoading(false);
+    })();
+  },[USER_ID, sessionLoading]);
+
   useEffect(()=>{lsSave("nq_xp",xp);},[xp]);
   useEffect(()=>{lsSave("nq_badges",badges);},[badges]);
   useEffect(()=>{lsSave("nq_streak",streak);},[streak]);
@@ -469,7 +567,7 @@ export default function App() {
   const updateToday = async (patch) => {
     const updated = {...todayData,...patch};
     setDays(prev=>({...prev,[today]:updated}));
-    await saveDay(today,updated);
+    await saveDay(USER_ID, today, updated);
     const s = calcStreak({...days,[today]:updated});
     setStreak(s); lsSave("nq_streak",s);
   };
@@ -480,14 +578,14 @@ export default function App() {
     if (isMeal) {
       const meal = fromDay.meals[slotId]; if (!meal) return;
       const newFromMeals = {...fromDay.meals}; delete newFromMeals[slotId];
-      await saveDay(today,{...fromDay,meals:newFromMeals});
-      await saveDay(targetDate,{...toDay,meals:{...toDay.meals,[slotId]:meal}});
+      await saveDay(USER_ID, today,{...fromDay,meals:newFromMeals});
+      await saveDay(USER_ID, targetDate,{...toDay,meals:{...toDay.meals,[slotId]:meal}});
     } else {
       const snack = (fromDay.snacks||[])[snackIndex]; if (!snack) return;
-      await saveDay(today,{...fromDay,snacks:(fromDay.snacks||[]).filter((_,i)=>i!==snackIndex)});
-      await saveDay(targetDate,{...toDay,snacks:[...(toDay.snacks||[]),snack]});
+      await saveDay(USER_ID, today,{...fromDay,snacks:(fromDay.snacks||[]).filter((_,i)=>i!==snackIndex)});
+      await saveDay(USER_ID, targetDate,{...toDay,snacks:[...(toDay.snacks||[]),snack]});
     }
-    const [,d] = await Promise.all([loadPerfil(),loadAllDays()]); setDays(d);
+    const [,d] = await Promise.all([loadPerfil(USER_ID),loadAllDays(USER_ID)]); setDays(d);
   };
 
   const handleDeleteMeal = async (slotId) => { const m={...todayData.meals}; delete m[slotId]; await updateToday({meals:m}); };
@@ -497,9 +595,9 @@ export default function App() {
     if (targetDate&&targetDate!==today) {
       const toDay = days[targetDate]||{meals:{},snacks:[],workout:null};
       const newFrom = {...todayData.meals}; delete newFrom[slotId];
-      await saveDay(today,{...todayData,meals:newFrom});
-      await saveDay(targetDate,{...toDay,meals:{...toDay.meals,[slotId]:meal}});
-      const [,d] = await Promise.all([loadPerfil(),loadAllDays()]); setDays(d);
+      await saveDay(USER_ID, today,{...todayData,meals:newFrom});
+      await saveDay(USER_ID, targetDate,{...toDay,meals:{...toDay.meals,[slotId]:meal}});
+      const [,d] = await Promise.all([loadPerfil(USER_ID),loadAllDays(USER_ID)]); setDays(d);
     } else { await updateToday({meals:{...todayData.meals,[slotId]:meal}}); }
   };
 
@@ -558,15 +656,30 @@ export default function App() {
     setWeekSummaryLoading(false);
   };
 
+  // ── Pantalla de carga de sesión ─────────────────────────────────────────
+  if (sessionLoading) return (
+    <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{textAlign:"center",color:G.muted}}>
+        <div style={{fontSize:44,marginBottom:14}}>🌿</div>
+        <p style={{fontSize:18,letterSpacing:"0.04em"}}>Cargando…</p>
+      </div>
+    </div>
+  );
+
+  // ── Pantalla de login ───────────────────────────────────────────────────
+  if (!session) return <AuthScreen />;
+
+  // ── Pantalla de carga de datos ──────────────────────────────────────────
   if (loading) return (
     <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <div style={{textAlign:"center",color:G.muted}}>
         <div style={{fontSize:44,marginBottom:14}}>🌿</div>
-        <p style={{fontSize:D.md,letterSpacing:"0.04em"}}>Cargando…</p>
+        <p style={{fontSize:18,letterSpacing:"0.04em"}}>Cargando…</p>
       </div>
     </div>
   );
-  if (!profile) return <ProfileSetup onSave={setProfile}/>;
+
+  if (!profile) return <ProfileSetup onSave={setProfile} userId={USER_ID}/>;
 
   const proteinGoal = Math.round(profile.weight*2);
   const todayProt = [...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.protein_g||0),0);
@@ -578,12 +691,13 @@ export default function App() {
       <Toast toasts={toasts}/>
       <div style={{maxWidth:isDesktop?720:640,margin:"0 auto",padding:isDesktop?"28px 40px":"20px 20px"}}>
 
-        <div style={{textAlign:"center",marginBottom:20}}>
+        <div style={{textAlign:"center",marginBottom:20,position:"relative"}}>
           <h1 style={{margin:"0 0 3px",fontSize:D.xl,fontWeight:300,color:G.text,letterSpacing:"0.02em"}}>🌿 NutriQuest</h1>
           <p style={{margin:0,fontSize:D.sm,color:G.hint,letterSpacing:"0.06em"}}>{new Date().toLocaleDateString("es",{weekday:"long",day:"numeric",month:"long",timeZone:"America/Argentina/Buenos_Aires"})}</p>
+          <button onClick={()=>supabase.auth.signOut()} style={{position:"absolute",right:0,top:"50%",transform:"translateY(-50%)",background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:G.hint,fontFamily:"inherit"}}>Salir</button>
         </div>
 
-        <ProfilePanel profile={profile} onUpdate={setProfile} D={D}/>
+        <ProfilePanel profile={profile} onUpdate={setProfile} userId={USER_ID} D={D}/>
         <XPBar xp={xp} streak={streak}/>
 
         <div style={{...glassCard,padding:"14px 20px",marginBottom:16}}>
