@@ -38,13 +38,33 @@ const FIXED_SLOTS = [
 const WORKOUT_TYPES = ["Fuerza/hipertrofia","Cardio","Funcional/HIIT","Movilidad","Deporte"];
 const todayStr = () => new Date().toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
 
+const GOAL_LABELS = {
+  comer_mejor:"🥗 Comer mejor",
+  energia:"⚡ Más energía",
+  musculo:"💪 Ganar músculo",
+  bajar_peso:"⚖️ Bajar de peso",
+  verme_mejor:"✨ Verme mejor",
+};
+
+const ACTIVIDAD_FACTOR = {
+  sedentario:1.2,ligero:1.375,moderado:1.55,activo:1.725,muy_activo:1.9,
+};
+
+function calcTDEE(peso,altura,edad,sexo,actividad) {
+  if (!peso||!altura||!edad||!sexo||!actividad) return null;
+  const bmr = sexo==="masculino"
+    ? 88.36+13.4*peso+4.8*altura-5.7*edad
+    : 447.6+9.2*peso+3.1*altura-4.3*edad;
+  return Math.round(bmr*(ACTIVIDAD_FACTOR[actividad]||1.55));
+}
+
 function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
-  useEffect(() => {
-    const handler = () => setIsDesktop(window.innerWidth >= 768);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, []);
+  const [isDesktop,setIsDesktop] = useState(()=>window.innerWidth>=768);
+  useEffect(()=>{
+    const handler=()=>setIsDesktop(window.innerWidth>=768);
+    window.addEventListener("resize",handler);
+    return ()=>window.removeEventListener("resize",handler);
+  },[]);
   return isDesktop;
 }
 
@@ -52,9 +72,9 @@ async function loadAllDays(userId) {
   const {data,error} = await supabase.from("registros").select("*").eq("user_id",userId);
   if (error) { console.error(error); return {}; }
   const map = {};
-  data.forEach(row => {
-    if (row.fecha === "perfil") return;
-    map[row.fecha] = {meals:row.meals||{},snacks:row.snacks||[],workout:row.workout||null};
+  data.forEach(row=>{
+    if (row.fecha==="perfil") return;
+    map[row.fecha]={meals:row.meals||{},snacks:row.snacks||[],workout:row.workout||null};
   });
   return map;
 }
@@ -63,42 +83,42 @@ async function loadPerfil(userId) {
   if (error||!data) return null;
   return data.perfil;
 }
-async function savePerfil(userId, perfil) {
+async function savePerfil(userId,perfil) {
   await supabase.from("registros").upsert({user_id:userId,auth_user_id:userId,fecha:"perfil",perfil},{onConflict:"user_id,fecha"});
 }
-async function saveDay(userId, fecha, dayData) {
+async function saveDay(userId,fecha,dayData) {
   await supabase.from("registros").upsert({
     user_id:userId,auth_user_id:userId,fecha,
     meals:dayData.meals||{},snacks:dayData.snacks||[],workout:dayData.workout||null,
   },{onConflict:"user_id,fecha"});
 }
-const lsLoad = (k,def) => { try { const v=localStorage.getItem(k); return v?JSON.parse(v):def; } catch { return def; } };
-const lsSave = (k,v) => { try { localStorage.setItem(k,JSON.stringify(v)); } catch {} };
+const lsLoad=(k,def)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch{return def;}};
+const lsSave=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
 
-async function callAI(prompt, system) {
+async function callAI(prompt,system) {
   const res = await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt,system})});
   const data = await res.json();
   const text = data.content?.find(b=>b.type==="text")?.text||"";
   return JSON.parse(text.replace(/```json|```/g,"").trim());
 }
 
-const glassCard = {background:G.glass,backdropFilter:blur,WebkitBackdropFilter:blur,border:`1px solid ${G.border}`,borderRadius:18};
-const glassSubtle = {background:G.glassDark,backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.borderSubtle}`,borderRadius:12};
+const glassCard={background:G.glass,backdropFilter:blur,WebkitBackdropFilter:blur,border:`1px solid ${G.border}`,borderRadius:18};
+const glassSubtle={background:G.glassDark,backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.borderSubtle}`,borderRadius:12};
 
 function AuthScreen() {
-  const [email,setEmail] = useState("");
-  const [password,setPassword] = useState("");
-  const [isLogin,setIsLogin] = useState(true);
-  const [loading,setLoading] = useState(false);
-  const [message,setMessage] = useState("");
-  const inp = {width:"100%",background:"rgba(255,255,255,0.5)",border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"12px 14px",fontSize:16,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
-  const lbl = {display:"block",fontSize:13,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
-  const handleSubmit = async () => {
+  const [email,setEmail]=useState("");
+  const [password,setPassword]=useState("");
+  const [isLogin,setIsLogin]=useState(true);
+  const [loading,setLoading]=useState(false);
+  const [message,setMessage]=useState("");
+  const inp={width:"100%",background:"rgba(255,255,255,0.5)",border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"12px 14px",fontSize:16,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
+  const lbl={display:"block",fontSize:13,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
+  const handleSubmit=async()=>{
     if (!email||!password) return;
-    setLoading(true); setMessage("");
-    const {error} = isLogin
-      ? await supabase.auth.signInWithPassword({email,password})
-      : await supabase.auth.signUp({email,password});
+    setLoading(true);setMessage("");
+    const {error}=isLogin
+      ?await supabase.auth.signInWithPassword({email,password})
+      :await supabase.auth.signUp({email,password});
     if (error) setMessage(error.message);
     else if (!isLogin) setMessage("Revisá tu email para confirmar tu cuenta.");
     setLoading(false);
@@ -148,29 +168,30 @@ function Divider() { return <div style={{height:"1px",background:"rgba(255,255,2
 
 function Confetti({active}) {
   if (!active) return null;
-  const pieces = Array.from({length:22},(_,i)=>({id:i,left:Math.random()*100,color:[G.sage,G.sageMid,G.gold,"#c8b89a","#8fad8b"][i%5],delay:Math.random()*0.4,size:5+Math.random()*6}));
+  const pieces=Array.from({length:22},(_,i)=>({id:i,left:Math.random()*100,color:[G.sage,G.sageMid,G.gold,"#c8b89a","#8fad8b"][i%5],delay:Math.random()*0.4,size:5+Math.random()*6}));
   return <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:9999}}>{pieces.map(p=><div key={p.id} style={{position:"absolute",left:`${p.left}%`,top:"-10px",width:p.size,height:p.size,borderRadius:"50%",background:p.color,animation:`fall 1.6s ${p.delay}s ease-in forwards`}}/>)}<style>{`@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:0;}}`}</style></div>;
 }
+
 function Toast({toasts}) {
   return <div style={{position:"fixed",bottom:24,right:20,zIndex:9998,display:"flex",flexDirection:"column",gap:8}}>{toasts.map(t=><div key={t.id} style={{background:G.glass,backdropFilter:blur,WebkitBackdropFilter:blur,border:`1px solid ${G.border}`,color:G.text,padding:"14px 18px",borderRadius:14,display:"flex",alignItems:"center",gap:10,borderLeft:`3px solid ${G.sage}`,animation:"slideIn 0.3s ease"}}><span style={{fontSize:22}}>{t.emoji}</span><div><div style={{fontWeight:600,fontSize:15}}>{t.title}</div><div style={{fontSize:13,color:G.muted}}>{t.desc}</div></div></div>)}<style>{`@keyframes slideIn{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}`}</style></div>;
 }
 
 function XPBar({xp,streak}) {
-  const li = LEVELS.reduce((a,l,i)=>xp>=l.xp?i:a,0);
-  const lvl = LEVELS[li], next = LEVELS[li+1];
-  const pct = next?Math.round(((xp-lvl.xp)/(next.xp-lvl.xp))*100):100;
+  const li=LEVELS.reduce((a,l,i)=>xp>=l.xp?i:a,0);
+  const lvl=LEVELS[li],next=LEVELS[li+1];
+  const pct=next?Math.round(((xp-lvl.xp)/(next.xp-lvl.xp))*100):100;
   return <div style={{...glassCard,padding:"16px 20px",marginBottom:16,display:"flex",alignItems:"center",gap:14}}><span style={{fontSize:26}}>{lvl.emoji}</span><div style={{flex:1}}><div style={{display:"flex",justifyContent:"space-between",fontSize:14,marginBottom:6}}><span style={{fontWeight:600,color:G.sage,letterSpacing:"0.03em"}}>{lvl.name}</span><span style={{color:G.hint,fontSize:13}}>{next?`${xp} / ${next.xp} xp`:"Máximo"}</span></div><div style={{background:"rgba(255,255,255,0.35)",borderRadius:99,height:6,overflow:"hidden"}}><div style={{width:`${pct}%`,background:G.sage,height:"100%",borderRadius:99,transition:"width 0.6s ease",opacity:0.8}}/></div></div>{streak>0&&<div style={{...glassSubtle,display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 12px",minWidth:42,borderRadius:10}}><span style={{fontSize:16}}>🔥</span><span style={{fontSize:12,color:G.gold,fontWeight:600,marginTop:1}}>{streak}d</span></div>}</div>;
 }
 
 function MealDetails({meal,D}) {
-  const hyC = {excelente:G.sage,bueno:G.sageMid,moderado:G.gold,bajo:G.red};
+  const hyC={excelente:G.sage,bueno:G.sageMid,moderado:G.gold,bajo:G.red};
   return <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(255,255,255,0.4)"}}><div style={{marginBottom:8,fontSize:D.md}}><span style={{color:G.hint,fontSize:D.sm}}>Hipertrofia — </span><span style={{color:hyC[meal.hypertrophy]||G.muted,fontWeight:600}}>{meal.hypertrophy}</span></div>{(meal.nutrients||[]).map((n,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:6}}><span style={{color:G.sage,fontWeight:600,minWidth:100,fontSize:D.sm}}>{n.name}</span><span style={{color:G.muted,fontSize:D.sm,lineHeight:1.5}}>{n.benefit}</span></div>)}{meal.tip&&<div style={{marginTop:10,background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:8,padding:"10px 14px",color:G.sage,fontSize:D.sm,fontStyle:"italic"}}>💡 {meal.tip}</div>}</div>;
 }
 
 function EditMealModal({meal,onSave,onDelete,onClose}) {
-  const [desc,setDesc] = useState(meal.desc||"");
-  const [date,setDate] = useState(todayStr());
-  const dateLabel = new Date(date+"T12:00:00").toLocaleDateString("es",{day:"numeric",month:"short",year:"numeric",timeZone:"America/Argentina/Buenos_Aires"});
+  const [desc,setDesc]=useState(meal.desc||"");
+  const [date,setDate]=useState(todayStr());
+  const dateLabel=new Date(date+"T12:00:00").toLocaleDateString("es",{day:"numeric",month:"short",year:"numeric",timeZone:"America/Argentina/Buenos_Aires"});
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(40,60,40,0.25)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{background:"rgba(255,255,255,0.88)",border:"1px solid rgba(255,255,255,0.75)",borderRadius:18,padding:24,width:"100%",maxWidth:420}}>
@@ -195,12 +216,11 @@ function EditMealModal({meal,onSave,onDelete,onClose}) {
 }
 
 function MealCard({meal,onDelete,onSave,D}) {
-  const [exp,setExp] = useState(false);
-  const [editing,setEditing] = useState(false);
-  const [editingGoals,setEditingGoals] = useState(false);
-  const skinC = {beneficioso:G.sage,neutro:G.muted,inflamatorio:G.red};
-  const skinBg = {beneficioso:G.sageLight,neutro:"rgba(255,255,255,0.2)",inflamatorio:G.redLight};
-  const skinBd = {beneficioso:G.sageBorder,neutro:G.borderSubtle,inflamatorio:"rgba(180,80,80,0.25)"};
+  const [exp,setExp]=useState(false);
+  const [editing,setEditing]=useState(false);
+  const skinC={beneficioso:G.sage,neutro:G.muted,inflamatorio:G.red};
+  const skinBg={beneficioso:G.sageLight,neutro:"rgba(255,255,255,0.2)",inflamatorio:G.redLight};
+  const skinBd={beneficioso:G.sageBorder,neutro:G.borderSubtle,inflamatorio:"rgba(180,80,80,0.25)"};
   return (
     <div>
       {editing&&<EditMealModal meal={meal} onSave={(desc,date)=>{onSave(desc,date);setEditing(false);}} onDelete={()=>{onDelete();setEditing(false);}} onClose={()=>setEditing(false)}/>}
@@ -221,7 +241,7 @@ function MealCard({meal,onDelete,onSave,D}) {
 }
 
 function MealSlot({slot,meal,input,onInput,loading,onSubmit,onDelete,onSave,D}) {
-  const inp = {width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"11px 14px",fontSize:D.md,boxSizing:"border-box",outline:"none",fontFamily:"inherit"};
+  const inp={width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"11px 14px",fontSize:D.md,boxSizing:"border-box",outline:"none",fontFamily:"inherit"};
   return (
     <div style={{padding:"18px 20px"}}>
       <div style={{fontWeight:500,fontSize:D.md,color:G.text,marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
@@ -241,43 +261,35 @@ function WorkoutCard({workout,compact,D}) {
 }
 
 function WeekRanking({days,D}) {
-  const weeks = {};
+  const weeks={};
   Object.entries(days).forEach(([date,day])=>{
-    const d = new Date(date+"T12:00:00");
-    const mon = new Date(d); mon.setDate(d.getDate()-d.getDay()+1);
-    const wk = mon.toISOString().slice(0,10);
+    const d=new Date(date+"T12:00:00");
+    const mon=new Date(d);mon.setDate(d.getDate()-d.getDay()+1);
+    const wk=mon.toISOString().slice(0,10);
     if (!weeks[wk]) weeks[wk]=[];
-    const allM = [...Object.values(day.meals||{}),...(day.snacks||[])];
+    const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];
     weeks[wk].push(allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:0);
   });
-  const ranked = Object.entries(weeks).map(([wk,arr])=>({wk,score:(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1),days:arr.length})).sort((a,b)=>b.score-a.score);
+  const ranked=Object.entries(weeks).map(([wk,arr])=>({wk,score:(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1),days:arr.length})).sort((a,b)=>b.score-a.score);
   return <div style={{...glassSubtle,padding:18,marginTop:10,borderRadius:14}}><p style={{margin:"0 0 12px",fontSize:D.md,fontWeight:600,color:G.text}}>Mejores semanas</p>{ranked.slice(0,5).map((r,i)=><div key={r.wk} style={{display:"flex",justifyContent:"space-between",fontSize:D.sm,padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.3)"}}><span style={{color:G.muted}}>{["🥇","🥈","🥉","4","5"][i]} {r.wk}</span><span style={{color:G.sage,fontWeight:600}}>⭐ {r.score} · {r.days}d</span></div>)}</div>;
 }
 
 function ProfilePanel({profile,onUpdate,userId,D}) {
   const [editing,setEditing] = useState(false);
-  const [form,setForm] = useState({name:profile.name,weight:profile.weight,height:profile.height,age:profile.age||"",sex:profile.sex||"",activity:profile.activity||""});
+  const [editingGoals,setEditingGoals] = useState(false);
+  const [form,setForm] = useState({name:profile.name,weight:profile.weight,height:profile.height,age:profile.age||""});
   const [selectedGoals,setSelectedGoals] = useState(profile.goals||[]);
 
   const bmi = (profile.weight/((profile.height/100)**2)).toFixed(1);
   const protGoal = Math.round(profile.weight*2);
 
-  const GOAL_LABELS = {
-    comer_mejor:"🥗 Comer mejor",energia:"⚡ Más energía",musculo:"💪 Ganar músculo",
-    bajar_peso:"⚖️ Bajar de peso",verme_mejor:"✨ Verme mejor",
-  };
-  const ACTIVIDAD_FACTOR = {sedentario:1.2,ligero:1.375,moderado:1.55,activo:1.725,muy_activo:1.9};
+  const inp={width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"11px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
+  const lbl={display:"block",fontSize:D.sm,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
 
-  const calcTDEE = (peso,altura,edad,sexo,actividad) => {
-    if (!peso||!altura||!edad||!sexo||!actividad) return null;
-    const bmr = sexo==="masculino"?88.36+13.4*peso+4.8*altura-5.7*edad:447.6+9.2*peso+3.1*altura-4.3*edad;
-    return Math.round(bmr*(ACTIVIDAD_FACTOR[actividad]||1.55));
-  };
+  const previewTDEE = calcTDEE(+form.weight||profile.weight,+profile.height,+form.age||profile.age,profile.sex,profile.activity);
+  const previewProt = Math.round((+form.weight||profile.weight)*2);
 
-  const inp = {width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"11px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
-  const lbl = {display:"block",fontSize:D.sm,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
-
-  const toggleGoal = (id) => {
+  const toggleGoal=(id)=>{
     setSelectedGoals(prev=>{
       if (prev.includes(id)) return prev.filter(x=>x!==id);
       if (prev.length>=3) return prev;
@@ -285,21 +297,22 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
     });
   };
 
-  const handleSave = async () => {
+  const handleSavePerfil=async()=>{
     if (!form.name||!+form.weight||!+form.height) return;
-    const tdee = calcTDEE(+form.weight,+form.height,+form.age||profile.age,form.sex||profile.sex,form.activity||profile.activity);
-    const updated = {...profile,name:form.name,weight:+form.weight,height:+form.height,age:+form.age||profile.age,sex:form.sex||profile.sex,activity:form.activity||profile.activity,goals:selectedGoals,tdee};
-    await savePerfil(userId,updated); onUpdate(updated); setEditing(false);
+    const tdee=calcTDEE(+form.weight,+profile.height,+form.age||profile.age,profile.sex,profile.activity);
+    const updated={...profile,name:form.name,weight:+form.weight,height:+profile.height,age:+form.age||profile.age,tdee};
+    await savePerfil(userId,updated);onUpdate(updated);setEditing(false);
   };
 
-  const handleCancel = () => {
+  const handleSaveGoals=async()=>{
+    const updated={...profile,goals:selectedGoals};
+    await savePerfil(userId,updated);onUpdate(updated);setEditingGoals(false);
+  };
+
+  const handleCancel=()=>{
     setEditing(false);
-    setForm({name:profile.name,weight:profile.weight,height:profile.height,age:profile.age||"",sex:profile.sex||"",activity:profile.activity||""});
-    setSelectedGoals(profile.goals||[]);
+    setForm({name:profile.name,weight:profile.weight,height:profile.height,age:profile.age||""});
   };
-
-  const previewTDEE = calcTDEE(+form.weight||profile.weight,+form.height||profile.height,+form.age||profile.age,form.sex||profile.sex,form.activity||profile.activity);
-  const previewProt = Math.round((+form.weight||profile.weight)*2);
 
   if (editing) return (
     <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
@@ -308,25 +321,10 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
       <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} style={inp}/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
         <div><label style={lbl}>Peso (kg)</label><input type="number" value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} style={inp}/></div>
-        <div><label style={lbl}>Altura (cm)</label><input type="number" value={form.height} onChange={e=>setForm(f=>({...f,height:e.target.value}))} style={inp}/></div>
+        <div><label style={lbl}>Altura (cm)</label><input type="number" value={profile.height} disabled style={{...inp,opacity:0.6}}/></div>
         <div><label style={lbl}>Edad</label><input type="number" value={form.age} onChange={e=>setForm(f=>({...f,age:e.target.value}))} style={inp}/></div>
       </div>
-      <label style={lbl}>Objetivos <span style={{color:G.hint,fontSize:11,textTransform:"none",letterSpacing:0}}>(hasta 3)</span></label>
-      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
-        {Object.entries(GOAL_LABELS).map(([id,label])=>{
-          const selected = selectedGoals.includes(id);
-          const disabled = !selected&&selectedGoals.length>=3;
-          return (
-            <div key={id} onClick={disabled?undefined:()=>toggleGoal(id)} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,cursor:disabled?"not-allowed":"pointer",background:selected?"rgba(90,122,84,0.12)":"rgba(255,255,255,0.35)",border:`1.5px solid ${selected?G.sage:"rgba(255,255,255,0.5)"}`,opacity:disabled?0.5:1,transition:"all 0.2s"}}>
-              <span style={{flex:1,fontSize:D.sm,color:selected?G.sage:G.muted,fontWeight:selected?600:400}}>{label}</span>
-              <div style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${selected?G.sage:"rgba(180,180,180,0.4)"}`,background:selected?G.sage:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                {selected&&<span style={{color:"#fff",fontSize:10,fontWeight:700}}>✓</span>}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:8,marginBottom:16}}>
         <div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
           <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>META DE PROTEÍNA</p>
           <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{previewProt}g<span style={{fontSize:12,fontWeight:400,color:G.hint}}>/día</span></p>
@@ -338,102 +336,110 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
       </div>
       <div style={{display:"flex",gap:8}}>
         <button onClick={handleCancel} style={{padding:"11px 20px",borderRadius:10,border:`1px solid rgba(180,180,180,0.35)`,background:"transparent",color:G.hint,fontSize:D.sm,fontWeight:500,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
-        <div style={{flex:1}}><Btn onClick={handleSave} full>Guardar</Btn></div>
+        <div style={{flex:1}}><Btn onClick={handleSavePerfil} full>Guardar</Btn></div>
       </div>
     </div>
   );
 
   return (
-  <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
+    <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
 
-    {/* Fila superior: avatar + datos + botón editar */}
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
-      <div style={{display:"flex",gap:12,alignItems:"center"}}>
-        <div style={{width:42,height:42,borderRadius:"50%",background:G.sageLight,border:`1px solid ${G.sageBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🌿</div>
-        <div>
-          <p style={{margin:0,fontSize:D.md,fontWeight:600,color:G.text}}>{profile.name}</p>
-          <p style={{margin:"3px 0 0",fontSize:D.sm,color:G.hint}}>{profile.weight}kg · {profile.height}cm · IMC {bmi}</p>
-        </div>
-      </div>
-      <button onClick={()=>setEditing(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:G.hint,fontFamily:"inherit",flexShrink:0}}>editar</button>
-    </div>
-
-    {/* Cards proteína y calorías */}
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-      <div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
-        <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>META DE PROTEÍNA</p>
-        <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{protGoal}g<span style={{fontSize:12,fontWeight:400,color:G.hint}}>/día</span></p>
-      </div>
-      {profile.tdee&&<div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
-        <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>CALORÍAS DIARIAS</p>
-        <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{profile.tdee.toLocaleString()}<span style={{fontSize:12,fontWeight:400,color:G.hint}}> kcal</span></p>
-      </div>}
-    </div>
-
-    {/* Objetivos */}
-    <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <p style={{margin:0,fontSize:D.sm,color:G.hint,letterSpacing:"0.04em",textTransform:"uppercase"}}>Objetivos</p>
-        <button onClick={()=>setEditingGoals(e=>!e)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:G.hint,fontFamily:"inherit"}}>editar</button>
-      </div>
-
-      {/* Tags de objetivos actuales */}
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:editingGoals?12:0}}>
-        {(profile.goals||[]).map(g=><span key={g} style={{fontSize:12,background:G.sageLight,color:G.sage,padding:"4px 10px",borderRadius:99,fontWeight:500}}>{GOAL_LABELS[g]||g}</span>)}
-      </div>
-
-      {/* Acordeón de objetivos */}
-      {editingGoals&&(
-        <div style={{marginTop:8}}>
-          <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
-            {Object.entries(GOAL_LABELS).map(([id,label])=>{
-              const selected = selectedGoals.includes(id);
-              const disabled = !selected&&selectedGoals.length>=3;
-              return (
-                <div key={id} onClick={disabled?undefined:()=>toggleGoal(id)} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,cursor:disabled?"not-allowed":"pointer",background:selected?"rgba(90,122,84,0.12)":"rgba(255,255,255,0.35)",border:`1.5px solid ${selected?G.sage:"rgba(255,255,255,0.5)"}`,opacity:disabled?0.5:1,transition:"all 0.2s"}}>
-                  <span style={{flex:1,fontSize:D.sm,color:selected?G.sage:G.muted,fontWeight:selected?600:400}}>{label}</span>
-                  <div style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${selected?G.sage:"rgba(180,180,180,0.4)"}`,background:selected?G.sage:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    {selected&&<span style={{color:"#fff",fontSize:10,fontWeight:700}}>✓</span>}
-                  </div>
-                </div>
-              );
-            })}
+      {/* Fila superior: datos + botón editar */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
+        <div style={{display:"flex",gap:12,alignItems:"center"}}>
+          <div style={{width:42,height:42,borderRadius:"50%",background:G.sageLight,border:`1px solid ${G.sageBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🌿</div>
+          <div>
+            <p style={{margin:0,fontSize:D.md,fontWeight:600,color:G.text}}>{profile.name}</p>
+            <p style={{margin:"3px 0 0",fontSize:D.sm,color:G.hint}}>{profile.weight}kg · {profile.height}cm · IMC {bmi}{profile.age?` · ${profile.age} años`:""}</p>
           </div>
-          <Btn onClick={async()=>{const updated={...profile,goals:selectedGoals};await savePerfil(userId,updated);onUpdate(updated);setEditingGoals(false);}} full>Actualizar objetivos</Btn>
         </div>
-      )}
-    </div>
+        <button onClick={()=>setEditing(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:G.hint,fontFamily:"inherit",flexShrink:0}}>editar</button>
+      </div>
 
-  </div>
-);
+      {/* Cards proteína y calorías */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+        <div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
+          <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>META DE PROTEÍNA</p>
+          <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{protGoal}g<span style={{fontSize:12,fontWeight:400,color:G.hint}}>/día</span></p>
+        </div>
+        {profile.tdee&&<div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
+          <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>CALORÍAS DIARIAS</p>
+          <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{profile.tdee.toLocaleString()}<span style={{fontSize:12,fontWeight:400,color:G.hint}}> kcal</span></p>
+        </div>}
+      </div>
+
+      {/* Sección objetivos */}
+      <div style={{borderTop:"1px solid rgba(255,255,255,0.4)",paddingTop:14}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <p style={{margin:0,fontSize:11,color:G.hint,letterSpacing:"0.04em",textTransform:"uppercase"}}>Objetivos</p>
+          <button onClick={()=>setEditingGoals(e=>!e)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:editingGoals?G.sage:G.hint,fontFamily:"inherit"}}>
+            {editingGoals?"cerrar":"editar"}
+          </button>
+        </div>
+
+        {/* Tags */}
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:editingGoals?12:0}}>
+          {(profile.goals||[]).map(g=>(
+            <span key={g} style={{fontSize:12,background:G.sageLight,color:G.sage,padding:"4px 10px",borderRadius:99,fontWeight:500}}>
+              {GOAL_LABELS[g]||g}
+            </span>
+          ))}
+        </div>
+
+        {/* Acordeón */}
+        {editingGoals&&(
+          <div style={{marginTop:8}}>
+            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
+              {Object.entries(GOAL_LABELS).map(([id,label])=>{
+                const selected=selectedGoals.includes(id);
+                const disabled=!selected&&selectedGoals.length>=3;
+                return (
+                  <div key={id} onClick={disabled?undefined:()=>toggleGoal(id)} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,cursor:disabled?"not-allowed":"pointer",background:selected?"rgba(90,122,84,0.12)":"rgba(255,255,255,0.35)",border:`1.5px solid ${selected?G.sage:"rgba(255,255,255,0.5)"}`,opacity:disabled?0.5:1,transition:"all 0.2s"}}>
+                    <span style={{flex:1,fontSize:D.sm,color:selected?G.sage:G.muted,fontWeight:selected?600:400}}>{label}</span>
+                    <div style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${selected?G.sage:"rgba(180,180,180,0.4)"}`,background:selected?G.sage:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      {selected&&<span style={{color:"#fff",fontSize:10,fontWeight:700}}>✓</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <Btn onClick={handleSaveGoals} full>Actualizar objetivos</Btn>
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+}
+
 function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRanking,setShowRanking,D}) {
-  const [period,setPeriod] = useState("week");
-  const getKey = d => d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
-  const getPeriodData = () => {
+  const [period,setPeriod]=useState("week");
+  const getKey=d=>d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
+  const getPeriodData=()=>{
     if (period==="week") return Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);const k=getKey(d);const day=days[k]||{};const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:null;return{key:k,label:d.toLocaleDateString("es",{weekday:"short"}),score:score!=null?Math.round(score*10)/10:null,prot:Math.round(allM.reduce((a,m)=>a+(m.protein_g||0),0)),workout:day.workout};});
     if (period==="month") return Array.from({length:30},(_,i)=>{const d=new Date();d.setDate(d.getDate()-29+i);const k=getKey(d);const day=days[k]||{};const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:null;return{key:k,label:d.getDate().toString(),score:score!=null?Math.round(score*10)/10:null,prot:Math.round(allM.reduce((a,m)=>a+(m.protein_g||0),0)),workout:day.workout};});
     return Array.from({length:12},(_,i)=>{const d=new Date();d.setMonth(d.getMonth()-11+i);d.setDate(1);const yr=d.getFullYear(),mo=d.getMonth();const mDays=Object.entries(days).filter(([k])=>{const dd=new Date(k+"T12:00:00");return dd.getFullYear()===yr&&dd.getMonth()===mo;});const allM=mDays.flatMap(([,day])=>[...Object.values(day.meals||{}),...(day.snacks||[])]);const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:null;const prot=mDays.length?mDays.reduce((acc,[,day])=>acc+[...Object.values(day.meals||{}),...(day.snacks||[])].reduce((a,m)=>a+(m.protein_g||0),0),0)/mDays.length:0;return{key:`${yr}-${mo}`,label:d.toLocaleDateString("es",{month:"short"}),score:score!=null?Math.round(score*10)/10:null,prot:Math.round(prot),workouts:mDays.filter(([,day])=>day.workout).length};});
   };
-  const data = getPeriodData();
-  const maxProt = Math.max(...data.map(d=>d.prot),1);
-  const scoreDays = data.filter(d=>d.score!=null);
-  const avgScore = scoreDays.length?(scoreDays.reduce((a,d)=>a+d.score,0)/scoreDays.length).toFixed(1):"—";
-  const avgProt = Math.round(data.reduce((a,d)=>a+d.prot,0)/Math.max(data.length,1));
+  const data=getPeriodData();
+  const maxProt=Math.max(...data.map(d=>d.prot),1);
+  const scoreDays=data.filter(d=>d.score!=null);
+  const avgScore=scoreDays.length?(scoreDays.reduce((a,d)=>a+d.score,0)/scoreDays.length).toFixed(1):"—";
+  const avgProt=Math.round(data.reduce((a,d)=>a+d.prot,0)/Math.max(data.length,1));
   const targetPerWeek=3,weeksInPeriod=period==="week"?1:period==="month"?4:52;
-  const targetTotal = targetPerWeek*weeksInPeriod;
-  const totalWorkouts = period==="year"?data.reduce((a,d)=>a+(d.workouts||0),0):data.filter(d=>d.workout).length;
-  const volumePct = Math.min(100,Math.round((totalWorkouts/targetTotal)*100));
-  const volumeColor = totalWorkouts>=targetTotal?G.sage:totalWorkouts>=targetTotal*0.7?G.gold:G.red;
-  const coherenceDays = Object.values(days).filter(d=>d.workout?.coherence_score);
-  const avgCoherence = coherenceDays.length?(coherenceDays.reduce((a,d)=>a+(d.workout.coherence_score||0),0)/coherenceDays.length).toFixed(1):null;
-  let currentStreak=0; const sd=new Date();
+  const targetTotal=targetPerWeek*weeksInPeriod;
+  const totalWorkouts=period==="year"?data.reduce((a,d)=>a+(d.workouts||0),0):data.filter(d=>d.workout).length;
+  const volumePct=Math.min(100,Math.round((totalWorkouts/targetTotal)*100));
+  const volumeColor=totalWorkouts>=targetTotal?G.sage:totalWorkouts>=targetTotal*0.7?G.gold:G.red;
+  const coherenceDays=Object.values(days).filter(d=>d.workout?.coherence_score);
+  const avgCoherence=coherenceDays.length?(coherenceDays.reduce((a,d)=>a+(d.workout.coherence_score||0),0)/coherenceDays.length).toFixed(1):null;
+  let currentStreak=0;const sd=new Date();
   while(true){const k=getKey(sd);const day=days[k];const has=day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);if(!has)break;currentStreak++;sd.setDate(sd.getDate()-1);}
   const allDates=Object.keys(days).filter(k=>k!=="perfil").sort();
   let maxStreak=0,tempStreak=0;
   for(let i=0;i<allDates.length;i++){const day=days[allDates[i]];const has=day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);if(has){tempStreak++;maxStreak=Math.max(maxStreak,tempStreak);}else{tempStreak=0;}}
   const calDays=Array.from({length:30},(_,i)=>{const d=new Date();d.setDate(d.getDate()-29+i);const day=days[getKey(d)];return day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);});
-  const gap = period==="month"?1:3;
-  const PeriodBtn = ({id,label}) => <button onClick={()=>setPeriod(id)} style={{padding:"7px 16px",borderRadius:99,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:D.sm,fontWeight:period===id?600:400,background:period===id?"rgba(90,122,84,0.2)":"transparent",color:period===id?G.sage:G.hint}}>{label}</button>;
+  const gap=period==="month"?1:3;
+  const PeriodBtn=({id,label})=><button onClick={()=>setPeriod(id)} style={{padding:"7px 16px",borderRadius:99,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:D.sm,fontWeight:period===id?600:400,background:period===id?"rgba(90,122,84,0.2)":"transparent",color:period===id?G.sage:G.hint}}>{label}</button>;
   return (
     <div>
       <div style={{...glassSubtle,display:"flex",justifyContent:"center",gap:4,padding:"4px",borderRadius:99,marginBottom:16}}>
@@ -498,47 +504,47 @@ function MetricsTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRa
 }
 
 export default function App() {
-  const isDesktop = useIsDesktop();
-  const D = {
+  const isDesktop=useIsDesktop();
+  const D={
     xs:isDesktop?"16px":"12px",sm:isDesktop?"19px":"13px",md:isDesktop?"22px":"15px",
     lg:isDesktop?"26px":"18px",xl:isDesktop?"34px":"22px",
   };
-  const inp = {width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"12px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
-  const lbl = {display:"block",fontSize:D.sm,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
+  const inp={width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"12px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
+  const lbl={display:"block",fontSize:D.sm,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
 
-  const [session,setSession] = useState(null);
-  const [sessionLoading,setSessionLoading] = useState(true);
+  const [session,setSession]=useState(null);
+  const [sessionLoading,setSessionLoading]=useState(true);
 
   useEffect(()=>{
     supabase.auth.getSession().then(({data:{session}})=>{setSession(session);setSessionLoading(false);});
-    const {data:{subscription}} = supabase.auth.onAuthStateChange((_event,session)=>{setSession(session);});
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{setSession(session);});
     return ()=>subscription.unsubscribe();
   },[]);
 
-  const USER_ID = session?.user?.id??"gabo";
+  const USER_ID=session?.user?.id??"gabo";
 
-  const [tab,setTab] = useState("today");
-  const [profile,setProfile] = useState(null);
-  const [days,setDays] = useState({});
-  const [loading,setLoading] = useState(true);
-  const [xp,setXp] = useState(()=>lsLoad("nq_xp",0));
-  const [badges,setBadges] = useState(()=>lsLoad("nq_badges",[]));
-  const [streak,setStreak] = useState(()=>lsLoad("nq_streak",0));
-  const [confetti,setConfetti] = useState(false);
-  const [toasts,setToasts] = useState([]);
-  const [histDate,setHistDate] = useState(todayStr());
-  const [expandedMeal,setExpandedMeal] = useState(null);
-  const [weekSummary,setWeekSummary] = useState(null);
-  const [weekSummaryLoading,setWeekSummaryLoading] = useState(false);
-  const [showRanking,setShowRanking] = useState(false);
-  const [mealInputs,setMealInputs] = useState({});
-  const [mealLoading,setMealLoading] = useState({});
-  const [snackName,setSnackName] = useState("");
-  const [workoutForm,setWorkoutForm] = useState({type:"Fuerza/hipertrofia",duration:45,intensity:3,notes:""});
-  const [workoutLoading,setWorkoutLoading] = useState(false);
+  const [tab,setTab]=useState("today");
+  const [profile,setProfile]=useState(null);
+  const [days,setDays]=useState({});
+  const [loading,setLoading]=useState(true);
+  const [xp,setXp]=useState(()=>lsLoad("nq_xp",0));
+  const [badges,setBadges]=useState(()=>lsLoad("nq_badges",[]));
+  const [streak,setStreak]=useState(()=>lsLoad("nq_streak",0));
+  const [confetti,setConfetti]=useState(false);
+  const [toasts,setToasts]=useState([]);
+  const [histDate,setHistDate]=useState(todayStr());
+  const [expandedMeal,setExpandedMeal]=useState(null);
+  const [weekSummary,setWeekSummary]=useState(null);
+  const [weekSummaryLoading,setWeekSummaryLoading]=useState(false);
+  const [showRanking,setShowRanking]=useState(false);
+  const [mealInputs,setMealInputs]=useState({});
+  const [mealLoading,setMealLoading]=useState({});
+  const [snackName,setSnackName]=useState("");
+  const [workoutForm,setWorkoutForm]=useState({type:"Fuerza/hipertrofia",duration:45,intensity:3,notes:""});
+  const [workoutLoading,setWorkoutLoading]=useState(false);
 
-  const today = todayStr();
-  const todayData = days[today]||{meals:{},snacks:[],workout:null};
+  const today=todayStr();
+  const todayData=days[today]||{meals:{},snacks:[],workout:null};
 
   useEffect(()=>{
     if (sessionLoading) return;
@@ -549,99 +555,83 @@ export default function App() {
   useEffect(()=>{lsSave("nq_badges",badges);},[badges]);
   useEffect(()=>{lsSave("nq_streak",streak);},[streak]);
 
-  const addToast = useCallback((badge)=>{const id=Date.now();setToasts(t=>[...t,{id,...badge}]);setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)),4000);},[]);
-  const unlockBadge = useCallback((id)=>{setBadges(b=>{if(b.includes(id))return b;const def=BADGES_DEF.find(x=>x.id===id);if(def)addToast({emoji:def.emoji,title:def.name,desc:def.desc});return[...b,id];});},[addToast]);
-  const calcStreak = useCallback((daysMap)=>{let s=0;const d=new Date();while(true){const k=d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});const day=daysMap[k];const has=day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0);if(!has)break;s++;d.setDate(d.getDate()-1);}return s;},[]);
+  const addToast=useCallback((badge)=>{const id=Date.now();setToasts(t=>[...t,{id,...badge}]);setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)),4000);},[]);
+  const unlockBadge=useCallback((id)=>{setBadges(b=>{if(b.includes(id))return b;const def=BADGES_DEF.find(x=>x.id===id);if(def)addToast({emoji:def.emoji,title:def.name,desc:def.desc});return[...b,id];});},[addToast]);
+  const calcStreak=useCallback((daysMap)=>{let s=0;const d=new Date();while(true){const k=d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});const day=daysMap[k];const has=day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0);if(!has)break;s++;d.setDate(d.getDate()-1);}return s;},[]);
 
-  const updateToday = async (patch) => {
-    const updated = {...todayData,...patch};
+  const updateToday=async(patch)=>{
+    const updated={...todayData,...patch};
     setDays(prev=>({...prev,[today]:updated}));
     await saveDay(USER_ID,today,updated);
-    const s = calcStreak({...days,[today]:updated});
-    setStreak(s); lsSave("nq_streak",s);
+    const s=calcStreak({...days,[today]:updated});
+    setStreak(s);lsSave("nq_streak",s);
   };
 
-  const handleMoveDate = async (slotId,targetDate,isMeal=true,snackIndex=null) => {
-    const fromDay = days[today]||{meals:{},snacks:[],workout:null};
-    const toDay = days[targetDate]||{meals:{},snacks:[],workout:null};
-    if (isMeal) {
-      const meal = fromDay.meals[slotId]; if (!meal) return;
-      const newFromMeals = {...fromDay.meals}; delete newFromMeals[slotId];
-      await saveDay(USER_ID,today,{...fromDay,meals:newFromMeals});
-      await saveDay(USER_ID,targetDate,{...toDay,meals:{...toDay.meals,[slotId]:meal}});
-    } else {
-      const snack = (fromDay.snacks||[])[snackIndex]; if (!snack) return;
-      await saveDay(USER_ID,today,{...fromDay,snacks:(fromDay.snacks||[]).filter((_,i)=>i!==snackIndex)});
-      await saveDay(USER_ID,targetDate,{...toDay,snacks:[...(toDay.snacks||[]),snack]});
-    }
-    const [,d] = await Promise.all([loadPerfil(USER_ID),loadAllDays(USER_ID)]); setDays(d);
-  };
-
-  const handleDeleteMeal = async (slotId) => { const m={...todayData.meals}; delete m[slotId]; await updateToday({meals:m}); };
-  const handleDeleteSnack = async (index) => { await updateToday({snacks:(todayData.snacks||[]).filter((_,i)=>i!==index)}); };
-  const handleEditMeal = async (slotId,newDesc,targetDate) => {
-    const meal = {...todayData.meals[slotId],desc:newDesc};
+  const handleDeleteMeal=async(slotId)=>{const m={...todayData.meals};delete m[slotId];await updateToday({meals:m});};
+  const handleDeleteSnack=async(index)=>{await updateToday({snacks:(todayData.snacks||[]).filter((_,i)=>i!==index)});};
+  const handleEditMeal=async(slotId,newDesc,targetDate)=>{
+    const meal={...todayData.meals[slotId],desc:newDesc};
     if (targetDate&&targetDate!==today) {
-      const toDay = days[targetDate]||{meals:{},snacks:[],workout:null};
-      const newFrom = {...todayData.meals}; delete newFrom[slotId];
+      const toDay=days[targetDate]||{meals:{},snacks:[],workout:null};
+      const newFrom={...todayData.meals};delete newFrom[slotId];
       await saveDay(USER_ID,today,{...todayData,meals:newFrom});
       await saveDay(USER_ID,targetDate,{...toDay,meals:{...toDay.meals,[slotId]:meal}});
-      const [,d] = await Promise.all([loadPerfil(USER_ID),loadAllDays(USER_ID)]); setDays(d);
-    } else { await updateToday({meals:{...todayData.meals,[slotId]:meal}}); }
+      const[,d]=await Promise.all([loadPerfil(USER_ID),loadAllDays(USER_ID)]);setDays(d);
+    } else {await updateToday({meals:{...todayData.meals,[slotId]:meal}});}
   };
 
   useEffect(()=>{if(streak>=3)unlockBadge("streak_3");if(streak>=7){unlockBadge("streak_7");unlockBadge("week_complete");}},[streak,unlockBadge]);
-  const triggerConfetti = () => { setConfetti(true); setTimeout(()=>setConfetti(false),2000); };
+  const triggerConfetti=()=>{setConfetti(true);setTimeout(()=>setConfetti(false),2000);};
 
-  const handleMealSubmit = async (slotId,label) => {
-    const desc = mealInputs[slotId]; if (!desc?.trim()) return;
+  const handleMealSubmit=async(slotId,label)=>{
+    const desc=mealInputs[slotId];if (!desc?.trim()) return;
     setMealLoading(l=>({...l,[slotId]:true}));
     try {
-      const result = await callAI(`Analiza esta comida: "${desc}". Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), hypertrophy ("excelente"|"bueno"|"moderado"|"bajo"), nutrients ([{name,benefit}] máx 4), tip (string breve).`,"Eres un nutricionista experto. Responde SOLO con JSON válido, sin texto adicional.");
-      const meal = {desc,...result,slot:slotId,label,timestamp:Date.now()};
-      const newMeals = {...todayData.meals,[slotId]:meal};
+      const result=await callAI(`Analiza esta comida: "${desc}". Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), hypertrophy ("excelente"|"bueno"|"moderado"|"bajo"), nutrients ([{name,benefit}] máx 4), tip (string breve).`,"Eres un nutricionista experto. Responde SOLO con JSON válido, sin texto adicional.");
+      const meal={desc,...result,slot:slotId,label,timestamp:Date.now()};
+      const newMeals={...todayData.meals,[slotId]:meal};
       await updateToday({meals:newMeals});
-      setXp(x=>x+50+(result.score||0)*5); triggerConfetti();
+      setXp(x=>x+50+(result.score||0)*5);triggerConfetti();
       if (Object.keys(newMeals).length===1&&Object.keys(days).length<=1) unlockBadge("first_meal");
-      const dayProt = Object.values(newMeals).reduce((a,m)=>a+(m.protein_g||0),0)+(todayData.snacks||[]).reduce((a,s)=>a+(s.protein_g||0),0);
+      const dayProt=Object.values(newMeals).reduce((a,m)=>a+(m.protein_g||0),0)+(todayData.snacks||[]).reduce((a,s)=>a+(s.protein_g||0),0);
       if (profile&&dayProt>=profile.weight*2) unlockBadge("protein_goal");
-      const scores = Object.values(newMeals).map(m=>m.score||0);
+      const scores=Object.values(newMeals).map(m=>m.score||0);
       if (scores.length>=3&&scores.reduce((a,b)=>a+b,0)/scores.length>=9) unlockBadge("perfect_day");
       setMealInputs(i=>({...i,[slotId]:""}));
-    } catch { alert("Error al analizar. Intentá de nuevo."); }
+    } catch {alert("Error al analizar. Intentá de nuevo.");}
     setMealLoading(l=>({...l,[slotId]:false}));
   };
 
-  const handleSnackSubmit = async () => {
-    const desc = mealInputs["snack_new"]; if (!desc?.trim()||!snackName?.trim()) return;
+  const handleSnackSubmit=async()=>{
+    const desc=mealInputs["snack_new"];if (!desc?.trim()||!snackName?.trim()) return;
     setMealLoading(l=>({...l,snack_new:true}));
     try {
-      const result = await callAI(`Analiza este tentempié "${snackName}": "${desc}". Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), hypertrophy ("excelente"|"bueno"|"moderado"|"bajo"), nutrients ([{name,benefit}] máx 4), tip (string breve).`,"Eres un nutricionista experto. Responde SOLO con JSON válido.");
+      const result=await callAI(`Analiza este tentempié "${snackName}": "${desc}". Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), hypertrophy ("excelente"|"bueno"|"moderado"|"bajo"), nutrients ([{name,benefit}] máx 4), tip (string breve).`,"Eres un nutricionista experto. Responde SOLO con JSON válido.");
       await updateToday({snacks:[...(todayData.snacks||[]),{desc,name:snackName,...result,timestamp:Date.now()}]});
-      setXp(x=>x+40+(result.score||0)*3); triggerConfetti(); unlockBadge("first_meal");
-      setMealInputs(i=>({...i,snack_new:""})); setSnackName("");
-    } catch { alert("Error al analizar el tentempié."); }
+      setXp(x=>x+40+(result.score||0)*3);triggerConfetti();unlockBadge("first_meal");
+      setMealInputs(i=>({...i,snack_new:""}));setSnackName("");
+    } catch {alert("Error al analizar el tentempié.");}
     setMealLoading(l=>({...l,snack_new:false}));
   };
 
-  const handleWorkoutSubmit = async () => {
+  const handleWorkoutSubmit=async()=>{
     setWorkoutLoading(true);
-    const mealsDesc = [...Object.values(todayData.meals||{}).map(m=>m.desc),...(todayData.snacks||[]).map(s=>s.desc)].join("; ");
+    const mealsDesc=[...Object.values(todayData.meals||{}).map(m=>m.desc),...(todayData.snacks||[]).map(s=>s.desc)].join("; ");
     try {
-      const result = await callAI(`Entreno: ${workoutForm.type}, ${workoutForm.duration}min, intensidad ${workoutForm.intensity}/5. Comidas hoy: "${mealsDesc}". SOLO JSON: coherence_score (1-10), balance (string), protein_ok (bool), strengths ([string]), suggestions ([string]).`,"Eres un entrenador y nutricionista. Responde SOLO con JSON válido.");
+      const result=await callAI(`Entreno: ${workoutForm.type}, ${workoutForm.duration}min, intensidad ${workoutForm.intensity}/5. Comidas hoy: "${mealsDesc}". SOLO JSON: coherence_score (1-10), balance (string), protein_ok (bool), strengths ([string]), suggestions ([string]).`,"Eres un entrenador y nutricionista. Responde SOLO con JSON válido.");
       await updateToday({workout:{...workoutForm,...result,timestamp:Date.now()}});
-      setXp(x=>x+80); unlockBadge("first_workout");
-      const weekW = Object.entries(days).filter(([d,v])=>{const diff=(new Date(today)-new Date(d))/86400000;return diff>=0&&diff<7&&v?.workout;}).length+1;
+      setXp(x=>x+80);unlockBadge("first_workout");
+      const weekW=Object.entries(days).filter(([d,v])=>{const diff=(new Date(today)-new Date(d))/86400000;return diff>=0&&diff<7&&v?.workout;}).length+1;
       if (weekW>=3) unlockBadge("athlete");
-    } catch { alert("Error al analizar el entrenamiento."); }
+    } catch {alert("Error al analizar el entrenamiento.");}
     setWorkoutLoading(false);
   };
 
-  const fetchWeekSummary = async () => {
+  const fetchWeekSummary=async()=>{
     setWeekSummaryLoading(true);
-    const data7 = Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);const k=d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});const day=days[k]||{};const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:0;return`${k}: score ${Math.round(score*10)/10}, prot ${Math.round(allM.reduce((a,m)=>a+(m.protein_g||0),0))}g`;}).join("; ");
-    try { const r=await callAI(`7 días de nutrición: ${data7}. SOLO JSON: best_day, worst_day, achievement (string), challenge (string), motivation (string).`,"Eres un coach nutricional. Responde SOLO con JSON válido."); setWeekSummary(r); }
-    catch { alert("Error al generar el resumen."); }
+    const data7=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);const k=d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});const day=days[k]||{};const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:0;return`${k}: score ${Math.round(score*10)/10}, prot ${Math.round(allM.reduce((a,m)=>a+(m.protein_g||0),0))}g`;}).join("; ");
+    try{const r=await callAI(`7 días de nutrición: ${data7}. SOLO JSON: best_day, worst_day, achievement (string), challenge (string), motivation (string).`,"Eres un coach nutricional. Responde SOLO con JSON válido.");setWeekSummary(r);}
+    catch{alert("Error al generar el resumen.");}
     setWeekSummaryLoading(false);
   };
 
@@ -661,9 +651,9 @@ export default function App() {
 
   if (!profile||!profile.onboarded) return <Onboarding onSave={async(perfil)=>{await savePerfil(USER_ID,perfil);setProfile(perfil);}} userId={USER_ID}/>;
 
-  const proteinGoal = Math.round(profile.weight*2);
-  const todayProt = [...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.protein_g||0),0);
-  const TABS = [{id:"today",label:"Hoy"},{id:"workout",label:"Entreno"},{id:"history",label:"Historial"},{id:"metrics",label:"Métricas"},{id:"badges",label:"Badges"}];
+  const proteinGoal=Math.round(profile.weight*2);
+  const todayProt=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.protein_g||0),0);
+  const TABS=[{id:"today",label:"Hoy"},{id:"workout",label:"Entreno"},{id:"history",label:"Historial"},{id:"metrics",label:"Métricas"},{id:"badges",label:"Badges"}];
 
   return (
     <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1} 0%,${G.bg2} 50%,${G.bg3} 100%)`,color:G.text}}>
@@ -746,11 +736,11 @@ export default function App() {
           <div>
             <input type="date" value={histDate} onChange={e=>setHistDate(e.target.value)} style={{...inp,marginBottom:16}}/>
             {(()=>{
-              const hDay = days[histDate];
+              const hDay=days[histDate];
               if (!hDay) return <p style={{color:G.hint,textAlign:"center",padding:28,fontSize:D.md}}>Sin registros para este día.</p>;
-              const allH = [...Object.values(hDay.meals||{}),...(hDay.snacks||[])];
-              const avgScore = allH.length?(allH.reduce((a,m)=>a+(m.score||0),0)/allH.length).toFixed(1):"—";
-              const totProt = Math.round(allH.reduce((a,m)=>a+(m.protein_g||0),0));
+              const allH=[...Object.values(hDay.meals||{}),...(hDay.snacks||[])];
+              const avgScore=allH.length?(allH.reduce((a,m)=>a+(m.score||0),0)/allH.length).toFixed(1):"—";
+              const totProt=Math.round(allH.reduce((a,m)=>a+(m.protein_g||0),0));
               return (
                 <div>
                   <div style={{...glassCard,padding:"16px 20px",marginBottom:12}}>
@@ -763,8 +753,8 @@ export default function App() {
                     </div>
                   </div>
                   {FIXED_SLOTS.map(slot=>{
-                    const m = hDay.meals?.[slot.id]; if (!m) return null;
-                    const key = `${histDate}-${slot.id}`; const isExp = expandedMeal===key;
+                    const m=hDay.meals?.[slot.id];if (!m) return null;
+                    const key=`${histDate}-${slot.id}`;const isExp=expandedMeal===key;
                     return (
                       <div key={key} style={{...glassCard,padding:"16px 20px",marginBottom:8}}>
                         <div style={{display:"flex",justifyContent:"space-between",cursor:"pointer",marginBottom:8}} onClick={()=>setExpandedMeal(isExp?null:key)}>
@@ -777,7 +767,7 @@ export default function App() {
                     );
                   })}
                   {(hDay.snacks||[]).map((s,i)=>{
-                    const key = `${histDate}-snack-${i}`; const isExp = expandedMeal===key;
+                    const key=`${histDate}-snack-${i}`;const isExp=expandedMeal===key;
                     return (
                       <div key={key} style={{...glassCard,padding:"16px 20px",marginBottom:8}}>
                         <div style={{display:"flex",justifyContent:"space-between",cursor:"pointer",marginBottom:8}} onClick={()=>setExpandedMeal(isExp?null:key)}>
@@ -803,7 +793,7 @@ export default function App() {
         {tab==="badges"&&(
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             {BADGES_DEF.map(b=>{
-              const unlocked = badges.includes(b.id);
+              const unlocked=badges.includes(b.id);
               return (
                 <div key={b.id} style={{...unlocked?glassCard:glassSubtle,padding:18,textAlign:"center",opacity:unlocked?1:0.5}}>
                   <div style={{fontSize:32,marginBottom:10,filter:unlocked?"none":"grayscale(1) opacity(0.4)"}}>{b.emoji}</div>
