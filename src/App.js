@@ -154,91 +154,92 @@ function AuthScreen() {
     setLoading(false);
   };
 
+  const inp={width:"100%",background:"rgba(255,255,255,0.55)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid rgba(255,255,255,0.6)`,borderRadius:12,color:G.text,padding:"13px 18px",fontSize:15,boxSizing:"border-box",outline:"none",fontFamily:"inherit",marginBottom:8};
+  const lbl={display:"block",fontSize:11,color:G.hint,marginBottom:6,letterSpacing:"0.06em",textTransform:"uppercase"};
+
   return (
-    <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(175deg,#3d6b47 0%,#5a7a54 30%,#87a882 65%,#c8d8c4 100%)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-end",position:"relative",overflow:"hidden"}}>
+    <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{width:"100%",maxWidth:420,borderRadius:28,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.12)"}}>
 
-      {/* Logo arriba */}
-      <div style={{position:"absolute",top:40,left:0,right:0,textAlign:"center",zIndex:1}}>
-        <div style={{fontSize:40,marginBottom:8}}>🌿</div>
-        <p style={{margin:0,fontSize:22,fontWeight:300,color:"#fff",letterSpacing:"-0.02em"}}>NutriQuest</p>
-        <p style={{margin:"6px 0 0",fontSize:12,color:"rgba(255,255,255,0.7)",letterSpacing:"0.08em",textTransform:"uppercase"}}>Tu compañero nutricional</p>
-      </div>
+        {/* Parte superior verde con plantas */}
+        <div style={{background:`linear-gradient(160deg,#3d6b47 0%,#5a7a54 60%,#87a882 100%)`,padding:"32px 28px 0",position:"relative",overflow:"hidden",minHeight:200}}>
 
-      {/* Ilustración plantas SVG */}
-      <svg viewBox="0 0 400 180" xmlns="http://www.w3.org/2000/svg" style={{position:"absolute",bottom:280,left:0,right:0,width:"100%",zIndex:1}}>
-        {/* colinas */}
-        <ellipse cx="100" cy="165" rx="160" ry="60" fill="rgba(255,255,255,0.06)"/>
-        <ellipse cx="310" cy="170" rx="150" ry="55" fill="rgba(255,255,255,0.06)"/>
-        {/* planta izquierda grande */}
-        <line x1="40" y1="175" x2="40" y2="110" stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round"/>
-        <ellipse cx="40" cy="98" rx="14" ry="20" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2"/>
-        <line x1="28" y1="145" x2="14" y2="128" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round"/>
-        <ellipse cx="10" cy="122" rx="10" ry="14" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.35)" strokeWidth="1"/>
-        {/* planta izquierda chica */}
-        <line x1="100" y1="175" x2="100" y2="138" stroke="rgba(255,255,255,0.45)" strokeWidth="1.5" strokeLinecap="round"/>
-        <ellipse cx="100" cy="128" rx="11" ry="16" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
-        {/* planta centro */}
-        <line x1="200" y1="175" x2="200" y2="120" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round"/>
-        <ellipse cx="200" cy="108" rx="16" ry="22" fill="rgba(255,255,255,0.16)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2"/>
-        <line x1="188" y1="150" x2="172" y2="135" stroke="rgba(255,255,255,0.35)" strokeWidth="1.2" strokeLinecap="round"/>
-        <ellipse cx="167" cy="129" rx="9" ry="13" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.25)" strokeWidth="1"/>
-        {/* planta derecha chica */}
-        <line x1="300" y1="175" x2="300" y2="140" stroke="rgba(255,255,255,0.45)" strokeWidth="1.5" strokeLinecap="round"/>
-        <ellipse cx="300" cy="130" rx="12" ry="17" fill="rgba(255,255,255,0.13)" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
-        {/* planta derecha grande */}
-        <line x1="360" y1="175" x2="360" y2="115" stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round"/>
-        <ellipse cx="360" cy="103" rx="14" ry="19" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2"/>
-        <line x1="372" y1="148" x2="386" y2="133" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round"/>
-        <ellipse cx="390" cy="127" rx="10" ry="14" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.35)" strokeWidth="1"/>
-        {/* hojitas sueltas */}
-        <ellipse cx="150" cy="158" rx="7" ry="11" fill="rgba(255,255,255,0.09)" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" transform="rotate(-20 150 158)"/>
-        <ellipse cx="245" cy="162" rx="6" ry="9" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.18)" strokeWidth="0.8" transform="rotate(15 245 162)"/>
-      </svg>
+          {/* Logo */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:14,position:"relative",zIndex:2}}>
+            <div style={{width:40,height:40,borderRadius:"50%",background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🌿</div>
+            <span style={{color:"#fff",fontSize:20,fontWeight:500,letterSpacing:"-0.01em"}}>NutriQuest</span>
+          </div>
 
-      {/* Sheet glassmorphism */}
-      <div style={{position:"relative",zIndex:2,width:"100%",maxWidth:480,background:"rgba(255,255,255,0.22)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.45)",borderRadius:"28px 28px 0 0",padding:"28px 28px 40px"}}>
+          {/* Tagline */}
+          <p style={{color:"rgba(255,255,255,0.85)",fontSize:14,textAlign:"center",lineHeight:1.6,margin:"0 0 0",position:"relative",zIndex:2}}>
+            Tu compañero nutricional —<br/>entendé cómo lo que comés afecta tu cuerpo.
+          </p>
 
-        {/* Tabs */}
-        <div style={{display:"flex",marginBottom:24,borderBottom:"1px solid rgba(255,255,255,0.25)"}}>
-          {["Iniciar sesión","Registrarse"].map((label,i)=>{
-            const active=(i===0&&isLogin)||(i===1&&!isLogin);
-            return (
-              <button key={i} onClick={()=>{setIsLogin(i===0);setMessage("");}} style={{flex:1,padding:"10px 0",background:"transparent",border:"none",borderBottom:`2px solid ${active?"#fff":"transparent"}`,marginBottom:-1,cursor:"pointer",fontSize:15,fontWeight:active?600:400,color:active?"#fff":"rgba(255,255,255,0.5)",fontFamily:"inherit",transition:"all 0.2s"}}>
-                {label}
-              </button>
-            );
-          })}
+          {/* Plantas SVG */}
+          <svg viewBox="0 0 420 100" xmlns="http://www.w3.org/2000/svg" style={{display:"block",width:"100%",marginTop:8,position:"relative",zIndex:1}}>
+            <ellipse cx="100" cy="95" rx="140" ry="50" fill="rgba(255,255,255,0.06)"/>
+            <ellipse cx="330" cy="98" rx="130" ry="45" fill="rgba(255,255,255,0.06)"/>
+            <line x1="40" y1="100" x2="40" y2="58" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round"/>
+            <ellipse cx="40" cy="48" rx="13" ry="18" fill="rgba(255,255,255,0.16)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2"/>
+            <line x1="28" y1="78" x2="15" y2="64" stroke="rgba(255,255,255,0.38)" strokeWidth="1.4" strokeLinecap="round"/>
+            <ellipse cx="11" cy="59" rx="9" ry="13" fill="rgba(255,255,255,0.11)" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
+            <line x1="110" y1="100" x2="110" y2="68" stroke="rgba(255,255,255,0.42)" strokeWidth="1.6" strokeLinecap="round"/>
+            <ellipse cx="110" cy="59" rx="11" ry="16" fill="rgba(255,255,255,0.13)" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
+            <line x1="210" y1="100" x2="210" y2="55" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round"/>
+            <ellipse cx="210" cy="44" rx="15" ry="21" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.38)" strokeWidth="1.2"/>
+            <line x1="197" y1="78" x2="182" y2="63" stroke="rgba(255,255,255,0.32)" strokeWidth="1.2" strokeLinecap="round"/>
+            <ellipse cx="177" cy="57" rx="9" ry="12" fill="rgba(255,255,255,0.09)" stroke="rgba(255,255,255,0.22)" strokeWidth="1"/>
+            <line x1="310" y1="100" x2="310" y2="65" stroke="rgba(255,255,255,0.42)" strokeWidth="1.6" strokeLinecap="round"/>
+            <ellipse cx="310" cy="56" rx="11" ry="16" fill="rgba(255,255,255,0.13)" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
+            <line x1="375" y1="100" x2="375" y2="55" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round"/>
+            <ellipse cx="375" cy="44" rx="14" ry="19" fill="rgba(255,255,255,0.16)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2"/>
+            <line x1="387" y1="76" x2="400" y2="62" stroke="rgba(255,255,255,0.38)" strokeWidth="1.4" strokeLinecap="round"/>
+            <ellipse cx="404" cy="57" rx="9" ry="13" fill="rgba(255,255,255,0.11)" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
+            <ellipse cx="160" cy="88" rx="6" ry="9" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.18)" strokeWidth="0.8" transform="rotate(-18 160 88)"/>
+            <ellipse cx="255" cy="91" rx="5" ry="8" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.16)" strokeWidth="0.8" transform="rotate(14 255 91)"/>
+          </svg>
         </div>
 
-        {/* Campos */}
-        <input
-          type="email" value={email} onChange={e=>setEmail(e.target.value)}
-          placeholder="Email"
-          onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
-          style={{width:"100%",background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.4)",borderRadius:99,color:"#fff",padding:"13px 20px",fontSize:15,boxSizing:"border-box",outline:"none",fontFamily:"inherit",marginBottom:12}}
-        />
-        <input
-          type="password" value={password} onChange={e=>setPassword(e.target.value)}
-          placeholder="Contraseña"
-          onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
-          style={{width:"100%",background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.4)",borderRadius:99,color:"#fff",padding:"13px 20px",fontSize:15,boxSizing:"border-box",outline:"none",fontFamily:"inherit",marginBottom:16}}
-        />
+        {/* Formulario */}
+        <div style={{background:"rgba(255,255,255,0.92)",backdropFilter:blur,WebkitBackdropFilter:blur,padding:"28px 28px 32px"}}>
 
-        {message&&(
-          <div style={{background:message.includes("email")?"rgba(90,122,84,0.4)":"rgba(180,80,80,0.3)",border:`1px solid ${message.includes("email")?"rgba(255,255,255,0.4)":"rgba(255,150,150,0.4)"}`,borderRadius:12,padding:"10px 16px",fontSize:14,color:"#fff",marginBottom:16}}>
-            {message}
+          {/* Toggle pill */}
+          <div style={{display:"flex",background:`rgba(138,180,132,0.15)`,borderRadius:99,padding:4,marginBottom:24,border:`1px solid rgba(90,122,84,0.2)`}}>
+            {["Iniciar sesión","Registrarse"].map((label,i)=>{
+              const active=(i===0&&isLogin)||(i===1&&!isLogin);
+              return (
+                <button key={i} onClick={()=>{setIsLogin(i===0);setMessage("");}} style={{flex:1,padding:"10px 0",borderRadius:99,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:14,fontWeight:active?600:400,background:active?G.sage:"transparent",color:active?"#fff":G.muted,transition:"all 0.2s"}}>
+                  {label}
+                </button>
+              );
+            })}
           </div>
-        )}
 
-        <Btn onClick={handleSubmit} loading={loading} full>
-          {isLogin?"Entrar":"Crear cuenta"}
-        </Btn>
+          {/* Campos */}
+          <label style={lbl}>Email</label>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" style={inp} onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
 
-        <p onClick={()=>{setIsLogin(l=>!l);setMessage("");}} style={{textAlign:"center",marginTop:16,fontSize:13,color:"rgba(255,255,255,0.65)",cursor:"pointer",userSelect:"none"}}>
-          {isLogin?"¿No tenés cuenta? ":"¿Ya tenés cuenta? "}
-          <span style={{color:"#fff",fontWeight:600}}>{isLogin?"Registrate":"Iniciá sesión"}</span>
-        </p>
+          <label style={{...lbl,marginTop:8}}>Contraseña</label>
+          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" style={{...inp,marginBottom:0}} onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
 
+          {message&&(
+            <div style={{background:message.includes("email")?G.sageLight:G.redLight,border:`1px solid ${message.includes("email")?G.sageBorder:"rgba(180,80,80,0.25)"}`,borderRadius:10,padding:"10px 14px",fontSize:13,color:message.includes("email")?G.sage:G.red,marginTop:12}}>
+              {message}
+            </div>
+          )}
+
+          <div style={{marginTop:20}}>
+            <Btn onClick={handleSubmit} loading={loading} full>
+              {isLogin?"Iniciar sesión":"Crear cuenta"}
+            </Btn>
+          </div>
+
+          <p onClick={()=>{setIsLogin(l=>!l);setMessage("");}} style={{textAlign:"center",marginTop:16,fontSize:13,color:G.hint,cursor:"pointer",userSelect:"none"}}>
+            {isLogin?"¿No tenés cuenta? ":"¿Ya tenés cuenta? "}
+            <span style={{color:G.sage,fontWeight:600}}>{isLogin?"Registrate":"Iniciá sesión"}</span>
+          </p>
+
+        </div>
       </div>
     </div>
   );
