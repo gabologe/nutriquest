@@ -162,8 +162,33 @@ function StepDatos({ form, setForm, onNext, onBack }) {
       </div>
 
       <label style={lbl}>Fecha de nacimiento</label>
-      <input type="date" value={form.fechaNac} onChange={e => setForm(f => ({ ...f, fechaNac: e.target.value }))} style={inp} />
-      {edad && <p style={{ margin: "4px 0 0", fontSize: 12, color: G.hint }}>{edad} años</p>}
+<div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1.5fr", gap: 8 }}>
+  <select
+    value={form.diaNac||""}
+    onChange={e=>setForm(f=>({...f,diaNac:e.target.value,fechaNac:e.target.value&&f.mesNac&&f.anioNac?`${f.anioNac}-${String(f.mesNac).padStart(2,"0")}-${String(e.target.value).padStart(2,"0")}`:""}))}
+    style={{...inp,marginBottom:0}}
+  >
+    <option value="">Día</option>
+    {Array.from({length:31},(_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}
+  </select>
+  <select
+    value={form.mesNac||""}
+    onChange={e=>setForm(f=>({...f,mesNac:e.target.value,fechaNac:f.diaNac&&e.target.value&&f.anioNac?`${f.anioNac}-${String(e.target.value).padStart(2,"0")}-${String(f.diaNac).padStart(2,"0")}`:""}))}
+    style={{...inp,marginBottom:0}}
+  >
+    <option value="">Mes</option>
+    {["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"].map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}
+  </select>
+  <select
+    value={form.anioNac||""}
+    onChange={e=>setForm(f=>({...f,anioNac:e.target.value,fechaNac:f.diaNac&&f.mesNac&&e.target.value?`${e.target.value}-${String(f.mesNac).padStart(2,"0")}-${String(f.diaNac).padStart(2,"0")}`:""}))}
+    style={{...inp,marginBottom:0}}
+  >
+    <option value="">Año</option>
+    {Array.from({length:100},(_,i)=>new Date().getFullYear()-18-i).map(y=><option key={y} value={y}>{y}</option>)}
+  </select>
+</div>
+{edad&&<p style={{margin:"6px 0 0",fontSize:12,color:G.hint}}>{edad} años</p>}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
@@ -259,7 +284,7 @@ export default function Onboarding({ onSave }) {
   const [restricciones, setRestricciones] = useState([]);
   const [restriccionCustom, setRestriccionCustom] = useState("");
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ nombre: "", sexo: "", fechaNac: "", peso: "", altura: "" });
+  const [form, setForm] = useState({ nombre: "", sexo: "", fechaNac: "", diaNac: "", mesNac: "", anioNac: "", peso: "", altura: "" });
 
   const factor = ACTIVIDAD.find(a => a.id === actividad)?.factor;
   const tdee = calcTDEE(+form.peso, +form.altura, form.fechaNac, form.sexo, factor);
