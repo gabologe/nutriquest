@@ -39,8 +39,7 @@ const RESTRICCIONES_SUGERIDAS = [
 
 function calcEdad(fechaNac) {
   if (!fechaNac) return null;
-  const hoy = new Date();
-  const nac = new Date(fechaNac);
+  const hoy = new Date(), nac = new Date(fechaNac);
   let edad = hoy.getFullYear() - nac.getFullYear();
   const m = hoy.getMonth() - nac.getMonth();
   if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
@@ -74,6 +73,12 @@ function Btn({ onClick, disabled, children, full }) {
   );
 }
 
+function BackBtn({ onClick }) {
+  return (
+    <button onClick={onClick} style={{ padding: "13px 20px", borderRadius: 12, border: `1px solid rgba(180,180,180,0.35)`, background: "transparent", color: G.hint, fontSize: 16, cursor: "pointer", fontFamily: "inherit" }}>Volver</button>
+  );
+}
+
 function SelectCard({ emoji, label, desc, selected, onClick, disabled }) {
   return (
     <div onClick={disabled ? undefined : onClick} style={{ background: selected ? "rgba(90,122,84,0.15)" : "rgba(255,255,255,0.4)", border: `1.5px solid ${selected ? G.sage : "rgba(255,255,255,0.5)"}`, borderRadius: 12, padding: "14px 16px", cursor: disabled ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 14, transition: "all 0.2s", opacity: disabled ? 0.5 : 1 }}>
@@ -86,12 +91,6 @@ function SelectCard({ emoji, label, desc, selected, onClick, disabled }) {
         {selected && <span style={{ color: "#fff", fontSize: 11, fontWeight: 700 }}>✓</span>}
       </div>
     </div>
-  );
-}
-
-function BackBtn({ onClick }) {
-  return (
-    <button onClick={onClick} style={{ padding: "13px 20px", borderRadius: 12, border: `1px solid rgba(180,180,180,0.35)`, background: "transparent", color: G.hint, fontSize: 16, cursor: "pointer", fontFamily: "inherit" }}>Volver</button>
   );
 }
 
@@ -139,10 +138,30 @@ function StepObjetivo({ objetivos, setObjetivos, onNext, onBack }) {
 function StepDatos({ form, setForm, onNext, onBack }) {
   const inp = { width: "100%", background: "rgba(255,255,255,0.5)", border: `1px solid ${G.border}`, borderRadius: 10, color: G.text, padding: "11px 14px", fontSize: 15, boxSizing: "border-box", outline: "none", fontFamily: "inherit" };
   const lbl = { display: "block", fontSize: 12, color: G.hint, marginBottom: 5, marginTop: 14, letterSpacing: "0.04em", textTransform: "uppercase" };
+
   const edad = calcEdad(form.fechaNac);
   const bmi = form.peso && form.altura ? (+form.peso / ((+form.altura / 100) ** 2)).toFixed(1) : null;
   const prot = form.peso ? Math.round(+form.peso * 2) : null;
   const valid = form.nombre && form.sexo && form.fechaNac && +form.peso > 0 && +form.altura > 0 && edad && edad >= 10;
+
+  const handleDia = (e) => {
+    const v = e.target.value.replace(/\D/g, "").slice(0, 2);
+    const fechaNac = v && form.mesNac && form.anioNac && form.anioNac.length === 4
+      ? `${form.anioNac}-${String(form.mesNac).padStart(2, "0")}-${String(v).padStart(2, "0")}` : "";
+    setForm(f => ({ ...f, diaNac: v, fechaNac }));
+  };
+  const handleMes = (e) => {
+    const v = e.target.value.replace(/\D/g, "").slice(0, 2);
+    const fechaNac = form.diaNac && v && form.anioNac && form.anioNac.length === 4
+      ? `${form.anioNac}-${String(v).padStart(2, "0")}-${String(form.diaNac).padStart(2, "0")}` : "";
+    setForm(f => ({ ...f, mesNac: v, fechaNac }));
+  };
+  const handleAnio = (e) => {
+    const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+    const fechaNac = form.diaNac && form.mesNac && v && v.length === 4
+      ? `${v}-${String(form.mesNac).padStart(2, "0")}-${String(form.diaNac).padStart(2, "0")}` : "";
+    setForm(f => ({ ...f, anioNac: v, fechaNac }));
+  };
 
   return (
     <div>
@@ -153,7 +172,7 @@ function StepDatos({ form, setForm, onNext, onBack }) {
       <input value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Tu nombre" style={inp} />
 
       <label style={lbl}>Sexo</label>
-      <div style={{ display: "flex", gap: 10, marginBottom: 4 }}>
+      <div style={{ display: "flex", gap: 10 }}>
         {["masculino", "femenino"].map(s => (
           <div key={s} onClick={() => setForm(f => ({ ...f, sexo: s }))} style={{ flex: 1, padding: "11px", borderRadius: 10, textAlign: "center", cursor: "pointer", border: `1.5px solid ${form.sexo === s ? G.sage : "rgba(255,255,255,0.5)"}`, background: form.sexo === s ? "rgba(90,122,84,0.12)" : "rgba(255,255,255,0.4)", fontSize: 15, color: form.sexo === s ? G.sage : G.muted, fontWeight: form.sexo === s ? 600 : 400, transition: "all 0.2s" }}>
             {s === "masculino" ? "Masculino" : "Femenino"}
@@ -162,55 +181,63 @@ function StepDatos({ form, setForm, onNext, onBack }) {
       </div>
 
       <label style={lbl}>Fecha de nacimiento</label>
-        <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-          <div style={{flex:1}}>
-            <p style={{margin:"0 0 4px",fontSize:11,color:G.hint,textAlign:"center"}}>Día</p>
-            <input
-              type="text" inputMode="text" autoComplete="off" maxLength={2} placeholder="15"
-              value={form.diaNac||""}
-              onChange={e=>{
-                const v=e.target.value.replace(/\D/g,"").slice(0,2);
-                const fechaNac=v&&form.mesNac&&form.anioNac&&form.anioNac.length===4?`${form.anioNac}-${String(form.mesNac).padStart(2,"0")}-${String(v).padStart(2,"0")}` :"";
-                setForm(f=>({...f,diaNac:v,fechaNac}));
-              }}
-              style={{...inp,marginBottom:0,textAlign:"center"}}
-            />
-          </div>
-          <div style={{flex:2}}>
-            <p style={{margin:"0 0 4px",fontSize:11,color:G.hint,textAlign:"center"}}>Mes</p>
-            <input
-              type="text" inputMode="numeric" autoComplete="off" maxLength={2} placeholder="06"
-              value={form.mesNac||""}
-              onChange={e=>{
-                const v=e.target.value.replace(/\D/g,"").slice(0,2);
-                const fechaNac=form.diaNac&&v&&form.anioNac&&form.anioNac.length===4?`${form.anioNac}-${String(v).padStart(2,"0")}-${String(form.diaNac).padStart(2,"0")}` :"";
-                setForm(f=>({...f,mesNac:v,fechaNac}));
-              }}
-              style={{...inp,marginBottom:0,textAlign:"center"}}
-            />
-          </div>
-          <div style={{flex:2}}>
-            <p style={{margin:"0 0 4px",fontSize:11,color:G.hint,textAlign:"center"}}>Año</p>
-            <input
-              type="text" inputMode="numeric" autoComplete="off" maxLength={4} placeholder="1990"
-              value={form.anioNac||""}
-              onChange={e=>{
-                const v=e.target.value.replace(/\D/g,"").slice(0,4);
-                const fechaNac=form.diaNac&&form.mesNac&&v&&v.length===4?`${v}-${String(form.mesNac).padStart(2,"0")}-${String(form.diaNac).padStart(2,"0")}` :"";
-                setForm(f=>({...f,anioNac:v,fechaNac}));
-              }}
-              style={{...inp,marginBottom:0,textAlign:"center"}}
-            />
-          </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: "0 0 4px", fontSize: 11, color: G.hint, textAlign: "center" }}>Día</p>
+          <input
+            type="text"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
+            maxLength={2}
+            placeholder="15"
+            value={form.diaNac || ""}
+            onChange={handleDia}
+            style={{ ...inp, textAlign: "center" }}
+          />
         </div>
-        {edad&&<p style={{margin:"6px 0 0",fontSize:12,color:G.hint}}>{edad} años</p>}      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: "0 0 4px", fontSize: 11, color: G.hint, textAlign: "center" }}>Mes</p>
+          <input
+            type="text"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
+            maxLength={2}
+            placeholder="06"
+            value={form.mesNac || ""}
+            onChange={handleMes}
+            style={{ ...inp, textAlign: "center" }}
+          />
+        </div>
+        <div style={{ flex: 2 }}>
+          <p style={{ margin: "0 0 4px", fontSize: 11, color: G.hint, textAlign: "center" }}>Año</p>
+          <input
+            type="text"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
+            maxLength={4}
+            placeholder="1990"
+            value={form.anioNac || ""}
+            onChange={handleAnio}
+            style={{ ...inp, textAlign: "center" }}
+          />
+        </div>
+      </div>
+      {edad && <p style={{ margin: "6px 0 0", fontSize: 12, color: G.hint }}>{edad} años</p>}
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 4 }}>
         <div>
           <label style={lbl}>Peso (kg)</label>
-          <input type="number" min="30" max="200" value={form.peso} onChange={e => setForm(f => ({ ...f, peso: e.target.value }))} placeholder="70" style={inp} />
+          <input type="text" inputMode="decimal" autoComplete="off" maxLength={5} placeholder="70" value={form.peso} onChange={e => setForm(f => ({ ...f, peso: e.target.value.replace(/[^\d.]/g, "") }))} style={inp} />
         </div>
         <div>
           <label style={lbl}>Altura (cm)</label>
-          <input type="number" min="100" max="230" value={form.altura} onChange={e => setForm(f => ({ ...f, altura: e.target.value }))} placeholder="170" style={inp} />
+          <input type="text" inputMode="decimal" autoComplete="off" maxLength={3} placeholder="170" value={form.altura} onChange={e => setForm(f => ({ ...f, altura: e.target.value.replace(/[^\d]/g, "") }))} style={inp} />
         </div>
       </div>
 
@@ -265,6 +292,7 @@ function StepActividad({ actividad, setActividad, form, onNext, onBack }) {
 
 function StepRestricciones({ restricciones, setRestricciones, restriccionCustom, setRestriccionCustom, onFinish, onBack, saving }) {
   const toggle = (id) => setRestricciones(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const inp = { width: "100%", background: "rgba(255,255,255,0.5)", border: `1px solid ${G.border}`, borderRadius: 10, color: G.text, padding: "11px 14px", fontSize: 15, boxSizing: "border-box", outline: "none", fontFamily: "inherit" };
   return (
     <div>
       <h2 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 500, color: G.text }}>¿Tenés alguna restricción?</h2>
@@ -281,7 +309,7 @@ function StepRestricciones({ restricciones, setRestricciones, restriccionCustom,
         })}
       </div>
       <label style={{ display: "block", fontSize: 12, color: G.hint, marginBottom: 8, letterSpacing: "0.04em", textTransform: "uppercase" }}>Otra restricción o preferencia</label>
-      <input value={restriccionCustom} onChange={e => setRestriccionCustom(e.target.value)} placeholder="Ej: no como cerdo, alergia al huevo..." style={{ width: "100%", background: "rgba(255,255,255,0.5)", border: `1px solid ${G.border}`, borderRadius: 10, color: G.text, padding: "11px 14px", fontSize: 15, boxSizing: "border-box", outline: "none", fontFamily: "inherit", marginBottom: 20 }} />
+      <input value={restriccionCustom} onChange={e => setRestriccionCustom(e.target.value)} placeholder="Ej: no como cerdo, alergia al huevo..." style={{ ...inp, marginBottom: 20 }} />
       <div style={{ display: "flex", gap: 10 }}>
         <BackBtn onClick={onBack} />
         <div style={{ flex: 1 }}><Btn onClick={onFinish} disabled={saving} full>{saving ? "Guardando..." : "¡Listo, empezar!"}</Btn></div>
@@ -297,7 +325,11 @@ export default function Onboarding({ onSave }) {
   const [restricciones, setRestricciones] = useState([]);
   const [restriccionCustom, setRestriccionCustom] = useState("");
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ nombre: "", sexo: "", fechaNac: "", fechaTexto: "", diaNac: "", mesNac: "", anioNac: "", peso: "", altura: "" });
+  const [form, setForm] = useState({
+    nombre: "", sexo: "", fechaNac: "",
+    diaNac: "", mesNac: "", anioNac: "",
+    peso: "", altura: ""
+  });
 
   const factor = ACTIVIDAD.find(a => a.id === actividad)?.factor;
   const tdee = calcTDEE(+form.peso, +form.altura, form.fechaNac, form.sexo, factor);
@@ -310,20 +342,15 @@ export default function Onboarding({ onSave }) {
       ...(restriccionCustom.trim() ? [restriccionCustom.trim()] : []),
     ].join(", ");
     const perfil = {
-      name: form.nombre,
-      weight: +form.peso,
-      height: +form.altura,
-      fechaNac: form.fechaNac,
-      age: edad,
-      sex: form.sexo,
-      activity: actividad,
-      goals: objetivos,
-      tdee,
+      name: form.nombre, weight: +form.peso, height: +form.altura,
+      fechaNac: form.fechaNac, age: edad,
+      sex: form.sexo, activity: actividad,
+      goals: objetivos, tdee,
       restrictions: allRestrictions || null,
       onboarded: true,
     };
     try { await onSave(perfil); }
-    catch (e) { console.error("Error al guardar perfil:", e); alert("Hubo un error al guardar. Intentá de nuevo."); }
+    catch (e) { console.error("Error:", e); alert("Hubo un error. Intentá de nuevo."); }
     setSaving(false);
   };
 
