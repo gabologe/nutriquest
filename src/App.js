@@ -184,8 +184,8 @@ function XPBar({xp,streak}) {
 }
 
 function MealDetails({meal,D}) {
-  const hyC={excelente:G.sage,bueno:G.sageMid,moderado:G.gold,bajo:G.red};
-  return <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(255,255,255,0.4)"}}><div style={{marginBottom:8,fontSize:D.md}}><span style={{color:G.hint,fontSize:D.sm}}>Hipertrofia — </span><span style={{color:hyC[meal.hypertrophy]||G.muted,fontWeight:600}}>{meal.hypertrophy}</span></div>{(meal.nutrients||[]).map((n,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:6}}><span style={{color:G.sage,fontWeight:600,minWidth:100,fontSize:D.sm}}>{n.name}</span><span style={{color:G.muted,fontSize:D.sm,lineHeight:1.5}}>{n.benefit}</span></div>)}{meal.tip&&<div style={{marginTop:10,background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:8,padding:"10px 14px",color:G.sage,fontSize:D.sm,fontStyle:"italic"}}>💡 {meal.tip}</div>}</div>;
+  const hyC={excelente:G.sage,bueno:G.sageMid,moderado:G.gold,bajo:G.red,perjudicial:G.red};
+  return <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(255,255,255,0.4)"}}><div style={{marginBottom:8,fontSize:D.md}}><span style={{color:G.hint,fontSize:D.sm}}>Alineación con objetivo — </span><span style={{color:hyC[meal.goal_alignment]||G.muted,fontWeight:600}}>{meal.goal_alignment}</span></div>
 }
 
 function EditMealModal({meal,onSave,onDelete,onClose}) {
@@ -219,6 +219,9 @@ function MealCard({meal,onDelete,onSave,D}) {
   const [exp,setExp]=useState(false);
   const [editing,setEditing]=useState(false);
   const skinC={beneficioso:G.sage,neutro:G.muted,inflamatorio:G.red};
+  const alignC={excelente:G.sage,bueno:G.sageMid,moderado:G.gold,perjudicial:G.red};
+  const alignBg={excelente:G.sageLight,bueno:"rgba(135,168,130,0.15)",moderado:G.goldLight,perjudicial:G.redLight};
+  const alignBd={excelente:G.sageBorder,bueno:"rgba(135,168,130,0.3)",moderado:"rgba(180,148,72,0.25)",perjudicial:"rgba(180,80,80,0.25)"};
   const skinBg={beneficioso:G.sageLight,neutro:"rgba(255,255,255,0.2)",inflamatorio:G.redLight};
   const skinBd={beneficioso:G.sageBorder,neutro:G.borderSubtle,inflamatorio:"rgba(180,80,80,0.25)"};
   return (
@@ -231,6 +234,7 @@ function MealCard({meal,onDelete,onSave,D}) {
             <Tag bg={G.goldLight} color={G.gold} border="rgba(180,148,72,0.25)">⭐ {meal.score}/10</Tag>
             <Tag>💪 {meal.protein_g}g</Tag>
             <Tag bg={skinBg[meal.skin_impact]} color={skinC[meal.skin_impact]} border={skinBd[meal.skin_impact]}>🌿 {meal.skin_impact}</Tag>
+{meal.goal_alignment&&<Tag bg={alignBg[meal.goal_alignment]} color={alignC[meal.goal_alignment]} border={alignBd[meal.goal_alignment]}>🎯 {meal.goal_alignment}</Tag>}
           </div>
         </div>
         <button onClick={()=>setEditing(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 9px",cursor:"pointer",fontSize:13,color:G.hint,marginLeft:12,flexShrink:0,fontFamily:"inherit"}}>✏️</button>
@@ -751,8 +755,8 @@ export default function App() {
     setMealLoading(l=>({...l,[slotId]:true}));
     try {
       const userGoals=(profile?.goals||[]).map(g=>({comer_mejor:"comer de forma más saludable",energia:"tener más energía",musculo:"ganar músculo",bajar_peso:"bajar de peso",verme_mejor:"verme mejor"}[g]||g)).join(", ");
-      const result=await callAI(`Analiza esta comida: "${desc}". El usuario tiene los siguientes objetivos: ${userGoals}. Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), hypertrophy ("excelente"|"bueno"|"moderado"|"bajo"), nutrients ([{name,benefit}] máx 4), tip (string breve personalizado según los objetivos del usuario).`,"Eres un nutricionista experto. Responde SOLO con JSON válido, sin texto adicional.");
-      const meal={desc,...result,slot:slotId,label,timestamp:Date.now()};
+      const userGoals=(profile?.goals||[]).map(g=>({comer_mejor:"comer de forma más saludable",energia:"tener más energía",musculo:"ganar músculo",bajar_peso:"bajar de peso",verme_mejor:"verme mejor"}[g]||g)).join(", ");
+      const result=await callAI(`Analiza esta comida: "${desc}". El usuario quiere: ${userGoals}. Sé honesto y específico: si algo no ayuda al objetivo o lo perjudica, decilo claramente. El score debe reflejar qué tan bien se alinea la comida con el objetivo del usuario, no solo si es "sana" en general. Devuelve SOLO JSON: score (1-10, siendo honesto según el objetivo), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), goal_alignment ("excelente"|"bueno"|"moderado"|"perjudicial"), nutrients ([{name, benefit}] máx 4, incluí al menos uno negativo si aplica), tip (string específico sobre qué mejorar o qué está bien, según el objetivo).`,"Eres un nutricionista honesto y experto. No des falso optimismo. Responde SOLO con JSON válido, sin texto adicional.");      const meal={desc,...result,slot:slotId,label,timestamp:Date.now()};
       const newMeals={...todayData.meals,[slotId]:meal};
       await updateToday({meals:newMeals});
       setXp(x=>x+50+(result.score||0)*5);triggerConfetti();
