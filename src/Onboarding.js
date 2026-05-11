@@ -166,7 +166,7 @@ function StepDatos({ form, setForm, onNext, onBack }) {
 <input
   type="text"
   inputMode="text"
-  placeholder="DD/MM/AAAA"
+  placeholder="ej: 15/06/1990"
   value={form.fechaTexto||""}
   onChange={e=>{
     let v=e.target.value.replace(/\D/g,"");
