@@ -166,7 +166,7 @@ function StepDatos({ form, setForm, onNext, onBack }) {
           <div style={{flex:1}}>
             <p style={{margin:"0 0 4px",fontSize:11,color:G.hint,textAlign:"center"}}>Día</p>
             <input
-              type="text" inputMode="numeric" autoComplete="off" maxLength={2} placeholder="15"
+              type="text" inputMode="text" autoComplete="off" maxLength={2} placeholder="15"
               value={form.diaNac||""}
               onChange={e=>{
                 const v=e.target.value.replace(/\D/g,"").slice(0,2);
