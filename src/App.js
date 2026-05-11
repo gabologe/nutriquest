@@ -58,6 +58,41 @@ function calcTDEE(peso,altura,edad,sexo,actividad) {
   return Math.round(bmr*(ACTIVIDAD_FACTOR[actividad]||1.55));
 }
 
+// Colores de barras de progreso según objetivo
+function getProgressColors(pct, type, goals=[]) {
+  const hasMusculo = goals.includes("musculo");
+  const hasBajarPeso = goals.includes("bajar_peso");
+
+  if (type==="protein") {
+    if (hasMusculo) {
+      if (pct>=100) return G.sage;
+      if (pct>=70) return G.sage;
+      return G.gold;
+    }
+    if (pct>=100) return G.sage;
+    if (pct>=60) return G.sage;
+    return G.gold;
+  }
+
+  if (type==="calories") {
+    if (hasBajarPeso) {
+      if (pct>100) return G.red;
+      if (pct>=90) return G.gold;
+      if (pct>=60) return G.sage;
+      return G.gold;
+    }
+    if (hasMusculo) {
+      if (pct>100) return G.gold;
+      if (pct>=80) return G.sage;
+      return G.gold;
+    }
+    if (pct>100) return G.red;
+    if (pct>=70) return G.sage;
+    return G.gold;
+  }
+  return G.sage;
+}
+
 function useIsDesktop() {
   const [isDesktop,setIsDesktop] = useState(()=>window.innerWidth>=768);
   useEffect(()=>{
@@ -100,6 +135,11 @@ async function callAI(prompt,system) {
   const data = await res.json();
   const text = data.content?.find(b=>b.type==="text")?.text||"";
   return JSON.parse(text.replace(/```json|```/g,"").trim());
+}
+
+function getGoalsText(goals=[]) {
+  const map={comer_mejor:"comer de forma más saludable",energia:"tener más energía",musculo:"ganar músculo",bajar_peso:"bajar de peso",verme_mejor:"verme mejor"};
+  return goals.map(g=>map[g]||g).join(", ");
 }
 
 const glassCard={background:G.glass,backdropFilter:blur,WebkitBackdropFilter:blur,border:`1px solid ${G.border}`,borderRadius:18};
@@ -146,23 +186,27 @@ function AuthScreen() {
   );
 }
 
-function Btn({onClick,loading,children,full,disabled}) {
+function Btn({onClick,loading,children,full,disabled,variant="primary"}) {
+  const base={
+    padding:"11px 20px",borderRadius:10,border:"none",
+    fontWeight:600,fontSize:16,
+    width:full?"100%":"auto",fontFamily:"inherit",letterSpacing:"0.02em",
+    transition:"all 0.2s",cursor:loading||disabled?"not-allowed":"pointer",
+    opacity:loading||disabled?0.8:1,
+    display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+  };
+  const styles = variant==="secondary"
+    ? {...base,background:"transparent",color:G.hint,border:`1px solid rgba(180,180,180,0.35)`}
+    : {...base,background:"#5a7a54",color:"#fff"};
   return (
-    <button onClick={onClick} disabled={loading||disabled} style={{
-      padding:"11px 20px",borderRadius:10,border:"none",
-      background:"#5a7a54",color:"#fff",fontWeight:600,fontSize:14,
-      width:full?"100%":"auto",fontFamily:"inherit",letterSpacing:"0.02em",
-      transition:"all 0.2s",cursor:loading||disabled?"not-allowed":"pointer",
-      opacity:loading||disabled?0.8:1,
-      display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-    }}>
+    <button onClick={onClick} disabled={loading||disabled} style={styles}>
       {loading?(<><span style={{width:15,height:15,border:"2px solid rgba(255,255,255,0.4)",borderTop:"2px solid #fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style></>):children}
     </button>
   );
 }
 
-function Tag({color,bg,border,children}) {
-  return <span style={{fontSize:13,background:bg||G.sageLight,color:color||G.sage,border:`1px solid ${border||G.sageBorder}`,padding:"4px 10px",borderRadius:99,fontWeight:500,letterSpacing:"0.02em"}}>{children}</span>;
+function Tag({color,bg,border,children,size}) {
+  return <span style={{fontSize:size||14,background:bg||G.sageLight,color:color||G.sage,border:`1px solid ${border||G.sageBorder}`,padding:"4px 10px",borderRadius:99,fontWeight:500,letterSpacing:"0.02em"}}>{children}</span>;
 }
 function Divider() { return <div style={{height:"1px",background:"rgba(255,255,255,0.4)",margin:"0 18px"}}/>; }
 
@@ -184,8 +228,24 @@ function XPBar({xp,streak}) {
 }
 
 function MealDetails({meal,D}) {
-  const hyC={excelente:G.sage,bueno:G.sageMid,moderado:G.gold,bajo:G.red,perjudicial:G.red};
-  return <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(255,255,255,0.4)"}}><div style={{marginBottom:8,fontSize:D.md}}><span style={{color:G.hint,fontSize:D.sm}}>Alineación con objetivo — </span><span style={{color:hyC[meal.goal_alignment]||G.muted,fontWeight:600}}>{meal.goal_alignment}</span></div>
+  const alignC={excelente:G.sage,bueno:G.sageMid,moderado:G.gold,perjudicial:G.red};
+  return (
+    <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(255,255,255,0.4)"}}>
+      {meal.goal_alignment&&(
+        <div style={{marginBottom:8,fontSize:D.md}}>
+          <span style={{color:G.hint,fontSize:D.sm}}>Alineación con objetivo — </span>
+          <span style={{color:alignC[meal.goal_alignment]||G.muted,fontWeight:600}}>{meal.goal_alignment}</span>
+        </div>
+      )}
+      {(meal.nutrients||[]).map((n,i)=>(
+        <div key={i} style={{display:"flex",gap:8,marginBottom:6}}>
+          <span style={{color:n.negative?G.red:G.sage,fontWeight:600,minWidth:100,fontSize:D.sm}}>{n.name}</span>
+          <span style={{color:G.muted,fontSize:D.sm,lineHeight:1.5}}>{n.benefit}</span>
+        </div>
+      ))}
+      {meal.tip&&<div style={{marginTop:10,background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:8,padding:"10px 14px",color:G.sage,fontSize:D.sm,fontStyle:"italic"}}>💡 {meal.tip}</div>}
+    </div>
+  );
 }
 
 function EditMealModal({meal,onSave,onDelete,onClose}) {
@@ -206,10 +266,10 @@ function EditMealModal({meal,onSave,onDelete,onClose}) {
         <label style={{display:"block",fontSize:13,color:"#93a48f",textTransform:"uppercase",letterSpacing:"0.04em",marginBottom:6}}>Descripción</label>
         <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3} style={{width:"100%",background:"rgba(255,255,255,0.65)",border:"1px solid rgba(200,200,200,0.4)",borderRadius:10,color:"#2a3428",padding:"12px 14px",fontSize:16,boxSizing:"border-box",fontFamily:"inherit",resize:"vertical",outline:"none",minHeight:80}}/>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:20}}>
-          <button onClick={onClose} style={{padding:12,borderRadius:10,border:"1px solid rgba(180,180,180,0.35)",background:"transparent",color:"#93a48f",fontSize:15,fontWeight:500,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
-          <button onClick={()=>onSave(desc,date)} style={{padding:12,borderRadius:10,border:"none",background:"#5a7a54",color:"#fff",fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Guardar</button>
+          <button onClick={onClose} style={{padding:12,borderRadius:10,border:"1px solid rgba(180,180,180,0.35)",background:"transparent",color:"#93a48f",fontSize:16,fontWeight:500,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+          <button onClick={()=>onSave(desc,date)} style={{padding:12,borderRadius:10,border:"none",background:"#5a7a54",color:"#fff",fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Guardar</button>
         </div>
-        <button onClick={()=>{if(window.confirm("¿Eliminar esta comida?"))onDelete();}} style={{display:"block",width:"100%",marginTop:18,textAlign:"center",fontSize:14,color:"#8a4040",textDecoration:"underline",textUnderlineOffset:3,background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:"inherit"}}>Eliminar esta comida</button>
+        <button onClick={()=>{if(window.confirm("¿Eliminar esta comida?"))onDelete();}} style={{display:"block",width:"100%",marginTop:18,textAlign:"center",fontSize:16,color:"#8a4040",textDecoration:"underline",textUnderlineOffset:3,background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:"inherit"}}>Eliminar esta comida</button>
       </div>
     </div>
   );
@@ -219,11 +279,12 @@ function MealCard({meal,onDelete,onSave,D}) {
   const [exp,setExp]=useState(false);
   const [editing,setEditing]=useState(false);
   const skinC={beneficioso:G.sage,neutro:G.muted,inflamatorio:G.red};
+  const skinBg={beneficioso:G.sageLight,neutro:"rgba(255,255,255,0.2)",inflamatorio:G.redLight};
+  const skinBd={beneficioso:G.sageBorder,neutro:G.borderSubtle,inflamatorio:"rgba(180,80,80,0.25)"};
   const alignC={excelente:G.sage,bueno:G.sageMid,moderado:G.gold,perjudicial:G.red};
   const alignBg={excelente:G.sageLight,bueno:"rgba(135,168,130,0.15)",moderado:G.goldLight,perjudicial:G.redLight};
   const alignBd={excelente:G.sageBorder,bueno:"rgba(135,168,130,0.3)",moderado:"rgba(180,148,72,0.25)",perjudicial:"rgba(180,80,80,0.25)"};
-  const skinBg={beneficioso:G.sageLight,neutro:"rgba(255,255,255,0.2)",inflamatorio:G.redLight};
-  const skinBd={beneficioso:G.sageBorder,neutro:G.borderSubtle,inflamatorio:"rgba(180,80,80,0.25)"};
+  const scoreColor = meal.score>=8?G.sage:meal.score>=6?G.gold:G.red;
   return (
     <div>
       {editing&&<EditMealModal meal={meal} onSave={(desc,date)=>{onSave(desc,date);setEditing(false);}} onDelete={()=>{onDelete();setEditing(false);}} onClose={()=>setEditing(false)}/>}
@@ -231,13 +292,13 @@ function MealCard({meal,onDelete,onSave,D}) {
         <div style={{flex:1,cursor:"pointer"}} onClick={()=>setExp(e=>!e)}>
           <p style={{margin:"0 0 8px",color:G.text,fontSize:D.md,lineHeight:1.6}}>{meal.desc}</p>
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            <Tag bg={G.goldLight} color={G.gold} border="rgba(180,148,72,0.25)">⭐ {meal.score}/10</Tag>
-            <Tag>💪 {meal.protein_g}g</Tag>
-            <Tag bg={skinBg[meal.skin_impact]} color={skinC[meal.skin_impact]} border={skinBd[meal.skin_impact]}>🌿 {meal.skin_impact}</Tag>
-{meal.goal_alignment&&<Tag bg={alignBg[meal.goal_alignment]} color={alignC[meal.goal_alignment]} border={alignBd[meal.goal_alignment]}>🎯 {meal.goal_alignment}</Tag>}
+            <Tag bg={meal.score>=8?G.sageLight:meal.score>=6?G.goldLight:G.redLight} color={scoreColor} border={meal.score>=8?G.sageBorder:meal.score>=6?"rgba(180,148,72,0.25)":"rgba(180,80,80,0.25)"} size={14}>⭐ {meal.score}/10</Tag>
+            <Tag size={14}>💪 {meal.protein_g}g</Tag>
+            <Tag bg={skinBg[meal.skin_impact]} color={skinC[meal.skin_impact]} border={skinBd[meal.skin_impact]} size={14}>🌿 {meal.skin_impact}</Tag>
+            {meal.goal_alignment&&<Tag bg={alignBg[meal.goal_alignment]} color={alignC[meal.goal_alignment]} border={alignBd[meal.goal_alignment]} size={14}>🎯 {meal.goal_alignment}</Tag>}
           </div>
         </div>
-        <button onClick={()=>setEditing(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 9px",cursor:"pointer",fontSize:13,color:G.hint,marginLeft:12,flexShrink:0,fontFamily:"inherit"}}>✏️</button>
+        <button onClick={()=>setEditing(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 9px",cursor:"pointer",fontSize:14,color:G.hint,marginLeft:12,flexShrink:0,fontFamily:"inherit"}}>✏️</button>
       </div>
       {exp&&<MealDetails meal={meal} D={D}/>}
     </div>
@@ -261,7 +322,7 @@ function MealSlot({slot,meal,input,onInput,loading,onSubmit,onDelete,onSave,D}) 
 }
 
 function WorkoutCard({workout,compact,D}) {
-  return <div><div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:compact?0:10}}><Tag>{workout.type}</Tag><Tag>{workout.duration} min</Tag><Tag>{"●".repeat(workout.intensity)} int.</Tag></div>{!compact&&workout.coherence_score&&<div style={{marginTop:12}}><div style={{fontSize:D.md,marginBottom:8}}><span style={{color:G.hint,fontSize:D.sm}}>Coherencia — </span><span style={{fontWeight:600,color:G.sage}}>{workout.coherence_score}/10</span></div><p style={{fontSize:D.md,color:G.muted,margin:"0 0 8px",lineHeight:1.6}}>{workout.balance}</p>{(workout.strengths||[]).map((s,i)=><div key={i} style={{fontSize:D.md,color:G.sage,marginBottom:4}}>✓ {s}</div>)}{(workout.suggestions||[]).map((s,i)=><div key={i} style={{fontSize:D.md,color:G.gold,marginBottom:4}}>→ {s}</div>)}</div>}</div>;
+  return <div><div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:compact?0:10}}><Tag size={14}>{workout.type}</Tag><Tag size={14}>{workout.duration} min</Tag><Tag size={14}>{"●".repeat(workout.intensity)} int.</Tag></div>{!compact&&workout.coherence_score&&<div style={{marginTop:12}}><div style={{fontSize:D.md,marginBottom:8}}><span style={{color:G.hint,fontSize:D.sm}}>Coherencia — </span><span style={{fontWeight:600,color:G.sage}}>{workout.coherence_score}/10</span></div><p style={{fontSize:D.md,color:G.muted,margin:"0 0 8px",lineHeight:1.6}}>{workout.balance}</p>{(workout.strengths||[]).map((s,i)=><div key={i} style={{fontSize:D.md,color:G.sage,marginBottom:4}}>✓ {s}</div>)}{(workout.suggestions||[]).map((s,i)=><div key={i} style={{fontSize:D.md,color:G.gold,marginBottom:4}}>→ {s}</div>)}</div>}</div>;
 }
 
 function WeekRanking({days,D}) {
@@ -339,7 +400,7 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
         </div>}
       </div>
       <div style={{display:"flex",gap:8}}>
-        <button onClick={handleCancel} style={{padding:"11px 20px",borderRadius:10,border:`1px solid rgba(180,180,180,0.35)`,background:"transparent",color:G.hint,fontSize:D.sm,fontWeight:500,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+        <Btn onClick={handleCancel} variant="secondary">Cancelar</Btn>
         <div style={{flex:1}}><Btn onClick={handleSavePerfil} full>Guardar</Btn></div>
       </div>
     </div>
@@ -355,7 +416,7 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
             <p style={{margin:"3px 0 0",fontSize:D.sm,color:G.hint}}>{profile.weight}kg · {profile.height}cm · IMC {bmi}{profile.age?` · ${profile.age} años`:""}</p>
           </div>
         </div>
-        <button onClick={()=>setEditing(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:G.hint,fontFamily:"inherit",flexShrink:0}}>editar</button>
+        <button onClick={()=>setEditing(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:14,color:G.hint,fontFamily:"inherit",flexShrink:0}}>editar</button>
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
@@ -372,13 +433,13 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
       <div style={{borderTop:"1px solid rgba(255,255,255,0.4)",paddingTop:14}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
           <p style={{margin:0,fontSize:11,color:G.hint,letterSpacing:"0.04em",textTransform:"uppercase"}}>Objetivos</p>
-          <button onClick={()=>setEditingGoals(e=>!e)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:editingGoals?G.sage:G.hint,fontFamily:"inherit"}}>
+          <button onClick={()=>setEditingGoals(e=>!e)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:14,color:editingGoals?G.sage:G.hint,fontFamily:"inherit"}}>
             {editingGoals?"cerrar":"editar"}
           </button>
         </div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:editingGoals?12:0}}>
           {(profile.goals||[]).map(g=>(
-            <span key={g} style={{fontSize:12,background:G.sageLight,color:G.sage,padding:"4px 10px",borderRadius:99,fontWeight:500}}>
+            <span key={g} style={{fontSize:13,background:G.sageLight,color:G.sage,padding:"4px 10px",borderRadius:99,fontWeight:500}}>
               {GOAL_LABELS[g]||g}
             </span>
           ))}
@@ -407,6 +468,87 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
   );
 }
 
+function PlanTab({todayData,profile,D}) {
+  const [plan,setPlan]=useState(null);
+  const [loading,setLoading]=useState(false);
+
+  const missingSlots=FIXED_SLOTS.filter(s=>!todayData.meals?.[s.id]);
+  const consumedCal=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.calories||m.protein_g*4||0),0);
+  const consumedProt=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.protein_g||0),0);
+  const remainingCal=profile?.tdee?(profile.tdee-consumedCal):null;
+  const remainingProt=profile?.weight?(Math.round(profile.weight*2)-consumedProt):null;
+  const isExceeded=remainingCal!==null&&remainingCal<0;
+  const userGoals=getGoalsText(profile?.goals||[]);
+
+  const handleGenerate=async()=>{
+    setLoading(true);
+    const pendingSlots=missingSlots.map(s=>s.label).join(", ")||"ninguno";
+    const alreadyEaten=Object.values(todayData.meals||{}).map(m=>m.desc).concat((todayData.snacks||[]).map(s=>s.desc)).join("; ")||"nada todavía";
+    const restrictions=profile?.restrictions?"Restricciones o preferencias alimentarias: "+profile.restrictions+".":"";
+
+    const prompt=isExceeded
+      ? `El usuario ya excedió sus calorías diarias (consumió ${Math.round(consumedCal)} de ${profile.tdee} kcal). Ya comió: ${alreadyEaten}. Sus objetivos son: ${userGoals}. ${restrictions} Le faltan estos momentos del día: ${pendingSlots}. Sugiere opciones muy livianas y nutritivas para terminar el día de forma inteligente, sin hacerlo sentir mal. Tono empático y positivo. Devuelve SOLO JSON: { slots: [{slot, sugerencia, motivo}], mensaje_motivacional }`
+      : `El usuario lleva ${Math.round(consumedCal)} kcal y ${Math.round(consumedProt)}g de proteína consumidas hoy. Le quedan aproximadamente ${Math.round(remainingCal||0)} kcal y ${Math.round(remainingProt||0)}g de proteína para cumplir sus metas. Ya comió: ${alreadyEaten}. Sus objetivos son: ${userGoals}. ${restrictions} Le faltan estos momentos del día: ${pendingSlots}. Sugiere qué comer en cada momento restante para que cierre el día bien. Devuelve SOLO JSON: { slots: [{slot, sugerencia, motivo}], mensaje_motivacional }`;
+
+    try {
+      const result=await callAI(prompt,"Eres un nutricionista empático y experto. Responde SOLO con JSON válido, sin texto adicional.");
+      setPlan(result);
+    } catch {alert("Error al generar el plan. Intentá de nuevo.");}
+    setLoading(false);
+  };
+
+  return (
+    <div>
+      <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <p style={{margin:0,fontSize:D.md,fontWeight:500,color:G.text}}>Plan de hoy</p>
+          {missingSlots.length===0
+            ?<span style={{fontSize:13,color:G.sage,fontWeight:500}}>✓ Día completo</span>
+            :<span style={{fontSize:13,color:G.hint}}>{missingSlots.length} comida{missingSlots.length!==1?"s":""} pendiente{missingSlots.length!==1?"s":""}</span>
+          }
+        </div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+          {FIXED_SLOTS.map(s=>{
+            const done=!!todayData.meals?.[s.id];
+            return (
+              <div key={s.id} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,background:done?"rgba(90,122,84,0.12)":"rgba(255,255,255,0.3)",border:`1px solid ${done?G.sage:G.borderSubtle}`}}>
+                <span style={{fontSize:14}}>{s.emoji}</span>
+                <span style={{fontSize:13,color:done?G.sage:G.hint,fontWeight:done?500:400}}>{s.label}</span>
+                {done&&<span style={{fontSize:11,color:G.sage}}>✓</span>}
+              </div>
+            );
+          })}
+        </div>
+        {isExceeded&&(
+          <div style={{background:G.redLight,border:`1px solid rgba(180,80,80,0.25)`,borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:D.sm,color:G.red}}>
+            Superaste las calorías de hoy — igual te sugerimos opciones livianas para terminar bien el día 💚
+          </div>
+        )}
+        <Btn onClick={handleGenerate} loading={loading} full>
+          {plan?"Actualizar plan":"Generar plan"}
+        </Btn>
+      </div>
+
+      {plan&&(
+        <div>
+          {plan.mensaje_motivacional&&(
+            <div style={{...glassCard,padding:"16px 20px",marginBottom:12}}>
+              <p style={{margin:0,fontSize:D.md,color:G.sage,fontStyle:"italic",lineHeight:1.6}}>💚 {plan.mensaje_motivacional}</p>
+            </div>
+          )}
+          {(plan.slots||[]).map((item,i)=>(
+            <div key={i} style={{...glassCard,padding:"16px 20px",marginBottom:10}}>
+              <p style={{margin:"0 0 6px",fontSize:12,color:G.hint,letterSpacing:"0.04em",textTransform:"uppercase"}}>{item.slot}</p>
+              <p style={{margin:"0 0 8px",fontSize:D.md,fontWeight:500,color:G.text,lineHeight:1.5}}>{item.sugerencia}</p>
+              <p style={{margin:0,fontSize:D.sm,color:G.muted,lineHeight:1.5}}>{item.motivo}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRanking,setShowRanking,badges,D}) {
   const [section,setSection]=useState("metricas");
   const getKey=d=>d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});
@@ -414,7 +556,7 @@ function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showR
   const [histDate,setHistDate]=useState(todayStr());
   const [expandedMeal,setExpandedMeal]=useState(null);
 
-  const inp={width:"100%",background:"rgba(255,255,255,0.5)",border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"12px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
+  const inp={width:"100%",background:"rgba(255,255,255,0.5)",border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"12px 14px",fontSize:16,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
 
   const getPeriodData=()=>{
     if (period==="week") return Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);const k=getKey(d);const day=days[k]||{};const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:null;return{key:k,label:d.toLocaleDateString("es",{weekday:"short"}),score:score!=null?Math.round(score*10)/10:null,prot:Math.round(allM.reduce((a,m)=>a+(m.protein_g||0),0)),workout:day.workout};});
@@ -505,7 +647,7 @@ function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showR
           </div>
           <Btn onClick={fetchWeekSummary} loading={weekSummaryLoading} full>Resumen semanal con IA</Btn>
           {weekSummary&&<div style={{...glassCard,padding:20,marginTop:12}}>{[["Mejor día",G.sage,weekSummary.best_day],["Peor día",G.red,weekSummary.worst_day],["Logro",G.text,weekSummary.achievement],["Próximo desafío",G.text,weekSummary.challenge]].map(([k,c,v])=><div key={k} style={{marginBottom:14}}><p style={{margin:"0 0 3px",fontSize:D.sm,color:G.hint,letterSpacing:"0.04em"}}>{k.toUpperCase()}</p><p style={{margin:0,fontSize:D.md,color:c,fontWeight:500}}>{v}</p></div>)}<div style={{background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:10,padding:"14px 16px",marginTop:4,color:G.sage,fontSize:D.md,fontStyle:"italic"}}>{weekSummary.motivation}</div></div>}
-          <button onClick={()=>setShowRanking(r=>!r)} style={{width:"100%",marginTop:12,padding:"10px",borderRadius:10,border:`1px solid ${G.borderSubtle}`,background:"rgba(255,255,255,0.2)",color:G.hint,cursor:"pointer",fontSize:D.sm,fontFamily:"inherit",backdropFilter:blurSm,WebkitBackdropFilter:blurSm}}>{showRanking?"Ocultar":"Ver"} ranking personal</button>
+          <button onClick={()=>setShowRanking(r=>!r)} style={{width:"100%",marginTop:12,padding:"10px",borderRadius:10,border:`1px solid ${G.borderSubtle}`,background:"rgba(255,255,255,0.2)",color:G.hint,cursor:"pointer",fontSize:16,fontFamily:"inherit",backdropFilter:blurSm,WebkitBackdropFilter:blurSm}}>{showRanking?"Ocultar":"Ver"} ranking personal</button>
           {showRanking&&<WeekRanking days={days} D={D}/>}
         </div>
       )}
@@ -524,10 +666,10 @@ function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showR
                 <div style={{...glassCard,padding:"16px 20px",marginBottom:12}}>
                   <p style={{margin:"0 0 10px",fontWeight:500,fontSize:D.lg}}>{new Date(histDate+"T12:00:00").toLocaleDateString("es",{weekday:"long",day:"numeric",month:"long"})}</p>
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    <Tag>{allH.length} comida{allH.length!==1?"s":""}</Tag>
-                    <Tag bg={G.goldLight} color={G.gold} border="rgba(180,148,72,0.25)">⭐ {avgScore}</Tag>
-                    <Tag>💪 {totProt}g</Tag>
-                    {hDay.workout&&<Tag>🏋️ {hDay.workout.type}</Tag>}
+                    <Tag size={14}>{allH.length} comida{allH.length!==1?"s":""}</Tag>
+                    <Tag bg={G.goldLight} color={G.gold} border="rgba(180,148,72,0.25)" size={14}>⭐ {avgScore}</Tag>
+                    <Tag size={14}>💪 {totProt}g</Tag>
+                    {hDay.workout&&<Tag size={14}>🏋️ {hDay.workout.type}</Tag>}
                   </div>
                 </div>
                 {FIXED_SLOTS.map(slot=>{
@@ -571,101 +713,12 @@ function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showR
             return (
               <div key={b.id} style={{...unlocked?glassCard:glassSubtle,padding:18,textAlign:"center",opacity:unlocked?1:0.5}}>
                 <div style={{fontSize:32,marginBottom:10,filter:unlocked?"none":"grayscale(1) opacity(0.4)"}}>{b.emoji}</div>
-                <p style={{margin:"0 0 4px",fontWeight:500,fontSize:D.md,color:G.text}}>{b.name}</p>
-                <p style={{margin:0,fontSize:D.sm,color:G.hint,lineHeight:1.5}}>{b.desc}</p>
-                {unlocked&&<p style={{margin:"10px 0 0",fontSize:D.xs,color:G.sage,fontWeight:600,letterSpacing:"0.04em"}}>✓ DESBLOQUEADO</p>}
+                <p style={{margin:"0 0 4px",fontWeight:500,fontSize:15,color:G.text}}>{b.name}</p>
+                <p style={{margin:0,fontSize:14,color:G.hint,lineHeight:1.5}}>{b.desc}</p>
+                {unlocked&&<p style={{margin:"10px 0 0",fontSize:13,color:G.sage,fontWeight:600,letterSpacing:"0.04em"}}>✓ DESBLOQUEADO</p>}
               </div>
             );
           })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function PlanTab({todayData,profile,D}) {
-  const [plan,setPlan]=useState(null);
-  const [loading,setLoading]=useState(false);
-
-  const missingSlots=FIXED_SLOTS.filter(s=>!todayData.meals?.[s.id]);
-  const hasSnacks=(todayData.snacks||[]).length>0;
-
-  const consumedCal=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.calories||m.protein_g*4||0),0);
-  const consumedProt=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.protein_g||0),0);
-  const remainingCal=profile?.tdee?(profile.tdee-consumedCal):null;
-  const remainingProt=profile?.weight?(Math.round(profile.weight*2)-consumedProt):null;
-  const isExceeded=remainingCal!==null&&remainingCal<0;
-
-  const userGoals=(profile?.goals||[]).map(g=>({
-    comer_mejor:"comer de forma más saludable",
-    energia:"tener más energía",
-    musculo:"ganar músculo",
-    bajar_peso:"bajar de peso",
-    verme_mejor:"verme mejor",
-  }[g]||g)).join(", ");
-
-  const handleGenerate=async()=>{
-    setLoading(true);
-    const pendingSlots=missingSlots.map(s=>s.label).join(", ")||"ninguno";
-    const alreadyEaten=Object.values(todayData.meals||{}).map(m=>m.desc).concat((todayData.snacks||[]).map(s=>s.desc)).join("; ")||"nada todavía";
-
-    const prompt=isExceeded
-      ? `El usuario ya excedió sus calorías diarias (consumió ${Math.round(consumedCal)} de ${profile.tdee} kcal). Ya comió: ${alreadyEaten}. Sus objetivos son: ${userGoals}. Le faltan estos momentos del día: ${pendingSlots}. Sugiere opciones muy livianas y nutritivas para terminar el día de forma inteligente, sin hacerlo sentir mal. Tono empático y positivo. Devuelve SOLO JSON: { slots: [{slot, sugerencia, motivo}], mensaje_motivacional }`
-      : `El usuario lleva ${Math.round(consumedCal)} kcal y ${Math.round(consumedProt)}g de proteína consumidas hoy. Le quedan aproximadamente ${Math.round(remainingCal||0)} kcal y ${Math.round(remainingProt||0)}g de proteína para cumplir sus metas. Ya comió: ${alreadyEaten}. Sus objetivos son: ${userGoals}. Le faltan estos momentos del día: ${pendingSlots}. Sugiere qué comer en cada momento restante para que cierre el día bien según sus objetivos. Devuelve SOLO JSON: { slots: [{slot, sugerencia, motivo}], mensaje_motivacional }`;
-
-    try {
-      const result=await callAI(prompt,"Eres un nutricionista empático y experto. Responde SOLO con JSON válido, sin texto adicional.");
-      setPlan(result);
-    } catch {alert("Error al generar el plan. Intentá de nuevo.");}
-    setLoading(false);
-  };
-
-  return (
-    <div>
-      <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-          <p style={{margin:0,fontSize:D.md,fontWeight:500,color:G.text}}>Plan de hoy</p>
-          {missingSlots.length===0
-            ? <span style={{fontSize:12,color:G.sage,fontWeight:500}}>✓ Día completo</span>
-            : <span style={{fontSize:12,color:G.hint}}>{missingSlots.length} comida{missingSlots.length!==1?"s":""} pendiente{missingSlots.length!==1?"s":""}</span>
-          }
-        </div>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
-          {FIXED_SLOTS.map(s=>{
-            const done=!!todayData.meals?.[s.id];
-            return (
-              <div key={s.id} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,background:done?"rgba(90,122,84,0.12)":"rgba(255,255,255,0.3)",border:`1px solid ${done?G.sage:G.borderSubtle}`}}>
-                <span style={{fontSize:14}}>{s.emoji}</span>
-                <span style={{fontSize:12,color:done?G.sage:G.hint,fontWeight:done?500:400}}>{s.label}</span>
-                {done&&<span style={{fontSize:10,color:G.sage}}>✓</span>}
-              </div>
-            );
-          })}
-        </div>
-        {isExceeded&&(
-          <div style={{background:G.redLight,border:`1px solid rgba(180,80,80,0.25)`,borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:D.sm,color:G.red}}>
-            Superaste las calorías de hoy — igual te sugerimos opciones livianas para terminar bien el día 💚
-          </div>
-        )}
-        <Btn onClick={handleGenerate} loading={loading} full>
-          {plan?"Actualizar plan":"Generar plan"}
-        </Btn>
-      </div>
-
-      {plan&&(
-        <div>
-          {plan.mensaje_motivacional&&(
-            <div style={{...glassCard,padding:"16px 20px",marginBottom:12,background:"rgba(90,122,84,0.08)"}}>
-              <p style={{margin:0,fontSize:D.md,color:G.sage,fontStyle:"italic",lineHeight:1.6}}>💚 {plan.mensaje_motivacional}</p>
-            </div>
-          )}
-          {(plan.slots||[]).map((item,i)=>(
-            <div key={i} style={{...glassCard,padding:"16px 20px",marginBottom:10}}>
-              <p style={{margin:"0 0 6px",fontSize:D.sm,color:G.hint,letterSpacing:"0.04em",textTransform:"uppercase"}}>{item.slot}</p>
-              <p style={{margin:"0 0 8px",fontSize:D.md,fontWeight:500,color:G.text,lineHeight:1.5}}>{item.sugerencia}</p>
-              <p style={{margin:0,fontSize:D.sm,color:G.muted,lineHeight:1.5}}>{item.motivo}</p>
-            </div>
-          ))}
         </div>
       )}
     </div>
@@ -754,9 +807,13 @@ export default function App() {
     const desc=mealInputs[slotId];if (!desc?.trim()) return;
     setMealLoading(l=>({...l,[slotId]:true}));
     try {
-      const userGoals=(profile?.goals||[]).map(g=>({comer_mejor:"comer de forma más saludable",energia:"tener más energía",musculo:"ganar músculo",bajar_peso:"bajar de peso",verme_mejor:"verme mejor"}[g]||g)).join(", ");
-      const userGoals=(profile?.goals||[]).map(g=>({comer_mejor:"comer de forma más saludable",energia:"tener más energía",musculo:"ganar músculo",bajar_peso:"bajar de peso",verme_mejor:"verme mejor"}[g]||g)).join(", ");
-      const result=await callAI(`Analiza esta comida: "${desc}". El usuario quiere: ${userGoals}. Sé honesto y específico: si algo no ayuda al objetivo o lo perjudica, decilo claramente. El score debe reflejar qué tan bien se alinea la comida con el objetivo del usuario, no solo si es "sana" en general. Devuelve SOLO JSON: score (1-10, siendo honesto según el objetivo), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), goal_alignment ("excelente"|"bueno"|"moderado"|"perjudicial"), nutrients ([{name, benefit}] máx 4, incluí al menos uno negativo si aplica), tip (string específico sobre qué mejorar o qué está bien, según el objetivo).`,"Eres un nutricionista honesto y experto. No des falso optimismo. Responde SOLO con JSON válido, sin texto adicional.");      const meal={desc,...result,slot:slotId,label,timestamp:Date.now()};
+      const userGoals=getGoalsText(profile?.goals||[]);
+      const restrictions=profile?.restrictions?`Restricciones alimentarias del usuario: ${profile.restrictions}.`:"";
+      const result=await callAI(
+        `Analiza esta comida: "${desc}". El usuario quiere: ${userGoals}. ${restrictions} Sé honesto y específico: si algo no ayuda al objetivo o lo perjudica, decilo claramente. El score debe reflejar qué tan bien se alinea la comida con el objetivo del usuario, no solo si es sana en general. Devuelve SOLO JSON: score (1-10, siendo honesto según el objetivo), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), goal_alignment ("excelente"|"bueno"|"moderado"|"perjudicial"), nutrients ([{name, benefit, negative: bool}] máx 4, incluí al menos uno con negative:true si aplica), tip (string específico sobre qué mejorar o qué está bien según el objetivo).`,
+        "Eres un nutricionista honesto y experto. No des falso optimismo. Responde SOLO con JSON válido, sin texto adicional."
+      );
+      const meal={desc,...result,slot:slotId,label,timestamp:Date.now()};
       const newMeals={...todayData.meals,[slotId]:meal};
       await updateToday({meals:newMeals});
       setXp(x=>x+50+(result.score||0)*5);triggerConfetti();
@@ -774,7 +831,12 @@ export default function App() {
     const desc=mealInputs["snack_new"];if (!desc?.trim()||!snackName?.trim()) return;
     setMealLoading(l=>({...l,snack_new:true}));
     try {
-      const userGoals=(profile?.goals||[]).map(g=>({comer_mejor:"comer de forma más saludable",energia:"tener más energía",musculo:"ganar músculo",bajar_peso:"bajar de peso",verme_mejor:"verme mejor"}[g]||g)).join(", "); const result=await callAI(`Analiza este tentempié "${snackName}": "${desc}". El usuario tiene los siguientes objetivos: ${userGoals}. Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), hypertrophy ("excelente"|"bueno"|"moderado"|"bajo"), nutrients ([{name,benefit}] máx 4), tip (string breve personalizado según los objetivos del usuario).`,"Eres un nutricionista experto. Responde SOLO con JSON válido.");
+      const userGoals=getGoalsText(profile?.goals||[]);
+      const restrictions=profile?.restrictions?`Restricciones alimentarias del usuario: ${profile.restrictions}.`:"";
+      const result=await callAI(
+        `Analiza este tentempié "${snackName}": "${desc}". El usuario quiere: ${userGoals}. ${restrictions} Sé honesto y específico. El score debe reflejar alineación con el objetivo. Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), goal_alignment ("excelente"|"bueno"|"moderado"|"perjudicial"), nutrients ([{name, benefit, negative: bool}] máx 4), tip (string específico según el objetivo).`,
+        "Eres un nutricionista honesto y experto. Responde SOLO con JSON válido."
+      );
       await updateToday({snacks:[...(todayData.snacks||[]),{desc,name:snackName,...result,timestamp:Date.now()}]});
       setXp(x=>x+40+(result.score||0)*3);triggerConfetti();unlockBadge("first_meal");
       setMealInputs(i=>({...i,snack_new:""}));setSnackName("");
@@ -798,7 +860,7 @@ export default function App() {
   const fetchWeekSummary=async()=>{
     setWeekSummaryLoading(true);
     const data7=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);const k=d.toLocaleDateString("en-CA",{timeZone:"America/Argentina/Buenos_Aires"});const day=days[k]||{};const allM=[...Object.values(day.meals||{}),...(day.snacks||[])];const score=allM.length?allM.reduce((a,m)=>a+(m.score||0),0)/allM.length:0;return`${k}: score ${Math.round(score*10)/10}, prot ${Math.round(allM.reduce((a,m)=>a+(m.protein_g||0),0))}g`;}).join("; ");
-    try{const r=await callAI(`7 días de nutrición: ${data7}. SOLO JSON: best_day, worst_day, achievement (string), challenge (string), motivation (string).`,"Eres un coach nutricional. Responde SOLO con JSON válido.");setWeekSummary(r);}
+    try{const r=await callAI(`7 días de nutrición: ${data7}. SOLO JSON: best_day, worst_day, achievement (string), challenge (string), motivation (string).`,"Eres un coach nutricional honesto. Responde SOLO con JSON válido.");setWeekSummary(r);}
     catch{alert("Error al generar el resumen.");}
     setWeekSummaryLoading(false);
   };
@@ -821,6 +883,12 @@ export default function App() {
 
   const proteinGoal=Math.round(profile.weight*2);
   const todayProt=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.protein_g||0),0);
+  const todayCal=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.calories||m.protein_g*4||0),0);
+  const protPct=Math.min(110,(todayProt/proteinGoal)*100);
+  const calPct=profile?.tdee?Math.min(110,(todayCal/profile.tdee)*100):0;
+  const protColor=getProgressColors(protPct,"protein",profile?.goals||[]);
+  const calColor=getProgressColors(calPct,"calories",profile?.goals||[]);
+
   const TABS=[{id:"today",label:"Hoy"},{id:"progress",label:"Progreso"},{id:"plan",label:"Plan"}];
 
   return (
@@ -832,36 +900,31 @@ export default function App() {
         <div style={{textAlign:"center",marginBottom:20,position:"relative"}}>
           <h1 style={{margin:"0 0 3px",fontSize:D.xl,fontWeight:300,color:G.text,letterSpacing:"0.02em"}}>🌿 NutriQuest</h1>
           <p style={{margin:0,fontSize:D.sm,color:G.hint,letterSpacing:"0.06em"}}>{new Date().toLocaleDateString("es",{weekday:"long",day:"numeric",month:"long",timeZone:"America/Argentina/Buenos_Aires"})}</p>
-          <button onClick={()=>supabase.auth.signOut()} style={{position:"absolute",right:0,top:"50%",transform:"translateY(-50%)",background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:G.hint,fontFamily:"inherit"}}>Salir</button>
+          <button onClick={()=>supabase.auth.signOut()} style={{position:"absolute",right:0,top:"50%",transform:"translateY(-50%)",background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:14,color:G.hint,fontFamily:"inherit"}}>Salir</button>
         </div>
 
         <ProfilePanel profile={profile} onUpdate={setProfile} userId={USER_ID} D={D}/>
         <XPBar xp={xp} streak={streak}/>
 
         <div style={{...glassCard,padding:"14px 20px",marginBottom:16}}>
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:D.sm,marginBottom:8}}>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:D.sm,marginBottom:6}}>
             <span style={{color:G.hint,letterSpacing:"0.04em",fontSize:D.xs}}>PROTEÍNA HOY</span>
-            <span style={{color:todayProt>=proteinGoal?G.sage:G.gold,fontWeight:600}}>{Math.round(todayProt)}g / {proteinGoal}g</span>
+            <span style={{color:protColor,fontWeight:600}}>{Math.round(todayProt)}g / <span style={{fontSize:"1.1em",fontWeight:700}}>{proteinGoal}g</span></span>
           </div>
           <div style={{background:"rgba(255,255,255,0.3)",borderRadius:99,height:6,overflow:"hidden",marginBottom:14}}>
-            <div style={{width:`${Math.min(100,(todayProt/proteinGoal)*100)}%`,background:G.sage,height:"100%",borderRadius:99,transition:"width 0.6s ease",opacity:0.75}}/>
+            <div style={{width:`${protPct}%`,background:protColor,height:"100%",borderRadius:99,transition:"width 0.6s ease",opacity:0.85}}/>
           </div>
-          {profile?.tdee&&(()=>{
-            const todayCal=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.calories||m.protein_g*4||0),0);
-            const calPct=Math.min(100,(todayCal/profile.tdee)*100);
-            const calColor=calPct>100?G.red:calPct>85?G.gold:G.sage;
-            return (
-              <>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:D.sm,marginBottom:8}}>
-                  <span style={{color:G.hint,letterSpacing:"0.04em",fontSize:D.xs}}>CALORÍAS HOY</span>
-                  <span style={{color:calColor,fontWeight:600}}>{Math.round(todayCal)} / {profile.tdee.toLocaleString()} kcal</span>
-                </div>
-                <div style={{background:"rgba(255,255,255,0.3)",borderRadius:99,height:6,overflow:"hidden"}}>
-                  <div style={{width:`${calPct}%`,background:calColor,height:"100%",borderRadius:99,transition:"width 0.6s ease",opacity:0.75}}/>
-                </div>
-              </>
-            );
-          })()}
+          {profile?.tdee&&(
+            <>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:D.sm,marginBottom:6}}>
+                <span style={{color:G.hint,letterSpacing:"0.04em",fontSize:D.xs}}>CALORÍAS HOY</span>
+                <span style={{color:calColor,fontWeight:600}}>{Math.round(todayCal)} / <span style={{fontSize:"1.1em",fontWeight:700}}>{profile.tdee.toLocaleString()} kcal</span></span>
+              </div>
+              <div style={{background:"rgba(255,255,255,0.3)",borderRadius:99,height:6,overflow:"hidden"}}>
+                <div style={{width:`${calPct}%`,background:calColor,height:"100%",borderRadius:99,transition:"width 0.6s ease",opacity:0.85}}/>
+              </div>
+            </>
+          )}
         </div>
 
         <div style={{...glassSubtle,display:"flex",gap:0,marginBottom:20,overflow:"hidden",padding:4,borderRadius:14}}>
@@ -935,13 +998,9 @@ export default function App() {
         )}
 
         {tab==="plan"&&(
-          <PlanTab
-            todayData={todayData}
-            profile={profile}
-            D={D}
-          />
+          <PlanTab todayData={todayData} profile={profile} D={D}/>
         )}
-              
+
       </div>
     </div>
   );
