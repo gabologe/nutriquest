@@ -26,6 +26,17 @@ const ACTIVIDAD = [
   { id: "muy_activo", emoji: "🔥", label: "Muy activo", desc: "Entrenamiento intenso diario", factor: 1.9 },
 ];
 
+const RESTRICCIONES_SUGERIDAS = [
+  { id: "vegetariano", emoji: "🥦", label: "Vegetariano" },
+  { id: "vegano", emoji: "🌱", label: "Vegano" },
+  { id: "sin_gluten", emoji: "🌾", label: "Sin gluten" },
+  { id: "sin_lactosa", emoji: "🥛", label: "Sin lactosa" },
+  { id: "sin_mariscos", emoji: "🦐", label: "Sin mariscos" },
+  { id: "sin_frutos_secos", emoji: "🥜", label: "Sin frutos secos" },
+  { id: "bajo_sodio", emoji: "🧂", label: "Bajo en sodio" },
+  { id: "diabetico", emoji: "🩺", label: "Diabético" },
+];
+
 function calcTDEE(peso, altura, edad, sexo, factorActividad) {
   if (!peso || !altura || !edad || !sexo || !factorActividad) return null;
   const bmr = sexo === "masculino"
@@ -75,7 +86,7 @@ function SelectCard({ emoji, label, desc, selected, onClick, disabled }) {
       <span style={{ fontSize: 24, flexShrink: 0 }}>{emoji}</span>
       <div style={{ flex: 1 }}>
         <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: G.text }}>{label}</p>
-        <p style={{ margin: "2px 0 0", fontSize: 13, color: G.hint }}>{desc}</p>
+        {desc && <p style={{ margin: "2px 0 0", fontSize: 13, color: G.hint }}>{desc}</p>}
       </div>
       <div style={{
         width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
@@ -127,10 +138,7 @@ function StepObjetivo({ objetivos, setObjetivos, onNext, onBack }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
         {OBJETIVOS.map(o => (
           <SelectCard
-            key={o.id}
-            emoji={o.emoji}
-            label={o.label}
-            desc={o.desc}
+            key={o.id} emoji={o.emoji} label={o.label} desc={o.desc}
             selected={objetivos.includes(o.id)}
             disabled={!objetivos.includes(o.id) && objetivos.length >= 3}
             onClick={() => toggle(o.id)}
@@ -138,12 +146,8 @@ function StepObjetivo({ objetivos, setObjetivos, onNext, onBack }) {
         ))}
       </div>
       <div style={{ display: "flex", gap: 10 }}>
-        <button onClick={onBack} style={{ padding: "13px 20px", borderRadius: 12, border: `1px solid rgba(180,180,180,0.35)`, background: "transparent", color: G.hint, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>
-          Volver
-        </button>
-        <div style={{ flex: 1 }}>
-          <Btn onClick={onNext} disabled={objetivos.length === 0} full>Continuar</Btn>
-        </div>
+        <button onClick={onBack} style={{ padding: "13px 20px", borderRadius: 12, border: `1px solid rgba(180,180,180,0.35)`, background: "transparent", color: G.hint, fontSize: 16, cursor: "pointer", fontFamily: "inherit" }}>Volver</button>
+        <div style={{ flex: 1 }}><Btn onClick={onNext} disabled={objetivos.length === 0} full>Continuar</Btn></div>
       </div>
     </div>
   );
@@ -217,19 +221,15 @@ function StepDatos({ form, setForm, onNext, onBack }) {
       )}
 
       <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-        <button onClick={onBack} style={{ padding: "13px 20px", borderRadius: 12, border: `1px solid rgba(180,180,180,0.35)`, background: "transparent", color: G.hint, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>
-          Volver
-        </button>
-        <div style={{ flex: 1 }}>
-          <Btn onClick={onNext} disabled={!valid} full>Continuar</Btn>
-        </div>
+        <button onClick={onBack} style={{ padding: "13px 20px", borderRadius: 12, border: `1px solid rgba(180,180,180,0.35)`, background: "transparent", color: G.hint, fontSize: 16, cursor: "pointer", fontFamily: "inherit" }}>Volver</button>
+        <div style={{ flex: 1 }}><Btn onClick={onNext} disabled={!valid} full>Continuar</Btn></div>
       </div>
     </div>
   );
 }
 
 // ── Pantalla 4: Nivel de actividad ─────────────────────────────────────────
-function StepActividad({ actividad, setActividad, form, onFinish, onBack, saving }) {
+function StepActividad({ actividad, setActividad, form, onNext, onBack }) {
   const factor = ACTIVIDAD.find(a => a.id === actividad)?.factor;
   const tdee = calcTDEE(+form.peso, +form.altura, +form.edad, form.sexo, factor);
 
@@ -240,14 +240,7 @@ function StepActividad({ actividad, setActividad, form, onFinish, onBack, saving
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
         {ACTIVIDAD.map(a => (
-          <SelectCard
-            key={a.id}
-            emoji={a.emoji}
-            label={a.label}
-            desc={a.desc}
-            selected={actividad === a.id}
-            onClick={() => setActividad(a.id)}
-          />
+          <SelectCard key={a.id} emoji={a.emoji} label={a.label} desc={a.desc} selected={actividad === a.id} onClick={() => setActividad(a.id)} />
         ))}
       </div>
 
@@ -261,11 +254,53 @@ function StepActividad({ actividad, setActividad, form, onFinish, onBack, saving
       )}
 
       <div style={{ display: "flex", gap: 10 }}>
-        <button onClick={onBack} style={{ padding: "13px 20px", borderRadius: 12, border: `1px solid rgba(180,180,180,0.35)`, background: "transparent", color: G.hint, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>
-          Volver
-        </button>
+        <button onClick={onBack} style={{ padding: "13px 20px", borderRadius: 12, border: `1px solid rgba(180,180,180,0.35)`, background: "transparent", color: G.hint, fontSize: 16, cursor: "pointer", fontFamily: "inherit" }}>Volver</button>
+        <div style={{ flex: 1 }}><Btn onClick={onNext} disabled={!actividad} full>Continuar</Btn></div>
+      </div>
+    </div>
+  );
+}
+
+// ── Pantalla 5: Restricciones alimentarias ─────────────────────────────────
+function StepRestricciones({ restricciones, setRestricciones, restriccionCustom, setRestriccionCustom, onFinish, onBack, saving }) {
+  const toggle = (id) => {
+    setRestricciones(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  return (
+    <div>
+      <h2 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 500, color: G.text }}>¿Tenés alguna restricción?</h2>
+      <p style={{ margin: "0 0 20px", fontSize: 14, color: G.hint }}>Opcional. Nos ayuda a darte sugerencias más precisas.</p>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+        {RESTRICCIONES_SUGERIDAS.map(r => {
+          const selected = restricciones.includes(r.id);
+          return (
+            <div key={r.id} onClick={() => toggle(r.id)} style={{
+              display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12,
+              cursor: "pointer", background: selected ? "rgba(90,122,84,0.12)" : "rgba(255,255,255,0.4)",
+              border: `1.5px solid ${selected ? G.sage : "rgba(255,255,255,0.5)"}`,
+              transition: "all 0.2s",
+            }}>
+              <span style={{ fontSize: 18 }}>{r.emoji}</span>
+              <span style={{ fontSize: 14, color: selected ? G.sage : G.muted, fontWeight: selected ? 600 : 400 }}>{r.label}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      <label style={{ display: "block", fontSize: 12, color: G.hint, marginBottom: 8, letterSpacing: "0.04em", textTransform: "uppercase" }}>Otra restricción o preferencia</label>
+      <input
+        value={restriccionCustom}
+        onChange={e => setRestriccionCustom(e.target.value)}
+        placeholder="Ej: no como cerdo, alergia al huevo..."
+        style={{ width: "100%", background: "rgba(255,255,255,0.5)", border: `1px solid ${G.border}`, borderRadius: 10, color: G.text, padding: "11px 14px", fontSize: 15, boxSizing: "border-box", outline: "none", fontFamily: "inherit", marginBottom: 20 }}
+      />
+
+      <div style={{ display: "flex", gap: 10 }}>
+        <button onClick={onBack} style={{ padding: "13px 20px", borderRadius: 12, border: `1px solid rgba(180,180,180,0.35)`, background: "transparent", color: G.hint, fontSize: 16, cursor: "pointer", fontFamily: "inherit" }}>Volver</button>
         <div style={{ flex: 1 }}>
-          <Btn onClick={onFinish} disabled={!actividad || saving} full>
+          <Btn onClick={onFinish} disabled={saving} full>
             {saving ? "Guardando..." : "¡Listo, empezar!"}
           </Btn>
         </div>
@@ -279,6 +314,8 @@ export default function Onboarding({ onSave, userId }) {
   const [step, setStep] = useState(0);
   const [objetivos, setObjetivos] = useState([]);
   const [actividad, setActividad] = useState("");
+  const [restricciones, setRestricciones] = useState([]);
+  const [restriccionCustom, setRestriccionCustom] = useState("");
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ nombre: "", sexo: "", edad: "", peso: "", altura: "" });
 
@@ -287,6 +324,11 @@ export default function Onboarding({ onSave, userId }) {
 
   const handleFinish = async () => {
     setSaving(true);
+    const allRestrictions = [
+      ...restricciones.map(r => RESTRICCIONES_SUGERIDAS.find(x => x.id === r)?.label || r),
+      ...(restriccionCustom.trim() ? [restriccionCustom.trim()] : []),
+    ].join(", ");
+
     const perfil = {
       name: form.nombre,
       weight: +form.peso,
@@ -296,6 +338,7 @@ export default function Onboarding({ onSave, userId }) {
       activity: actividad,
       goals: objetivos,
       tdee: tdee,
+      restrictions: allRestrictions || null,
       onboarded: true,
     };
     await onSave(perfil);
@@ -306,7 +349,8 @@ export default function Onboarding({ onSave, userId }) {
     <StepBienvenida onNext={() => setStep(1)} />,
     <StepObjetivo objetivos={objetivos} setObjetivos={setObjetivos} onNext={() => setStep(2)} onBack={() => setStep(0)} />,
     <StepDatos form={form} setForm={setForm} onNext={() => setStep(3)} onBack={() => setStep(1)} />,
-    <StepActividad actividad={actividad} setActividad={setActividad} form={form} onFinish={handleFinish} onBack={() => setStep(2)} saving={saving} />,
+    <StepActividad actividad={actividad} setActividad={setActividad} form={form} onNext={() => setStep(4)} onBack={() => setStep(2)} />,
+    <StepRestricciones restricciones={restricciones} setRestricciones={setRestricciones} restriccionCustom={restriccionCustom} setRestriccionCustom={setRestriccionCustom} onFinish={handleFinish} onBack={() => setStep(3)} saving={saving} />,
   ];
 
   return (
@@ -316,7 +360,7 @@ export default function Onboarding({ onSave, userId }) {
       display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
     }}>
       <div style={{ ...glassCard, padding: 32, maxWidth: 460, width: "100%" }}>
-        <ProgressDots total={4} current={step} />
+        <ProgressDots total={5} current={step} />
         {steps[step]}
       </div>
     </div>
