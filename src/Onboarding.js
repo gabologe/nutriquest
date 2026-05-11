@@ -162,48 +162,48 @@ function StepDatos({ form, setForm, onNext, onBack }) {
       </div>
 
       <label style={lbl}>Fecha de nacimiento</label>
-<div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-  <div style={{flex:1}}>
-    <p style={{margin:"0 0 4px",fontSize:11,color:G.hint,textAlign:"center"}}>Día</p>
-    <input
-      type="text" inputMode="numeric" autoComplete="off" maxLength={2} placeholder="15"
-      value={form.diaNac||""}
-      onChange={e=>{
-        const v=e.target.value.replace(/\D/g,"").slice(0,2);
-        const fechaNac=v&&form.mesNac&&form.anioNac&&form.anioNac.length===4?`${form.anioNac}-${String(form.mesNac).padStart(2,"0")}-${String(v).padStart(2,"0")}` :"";
-        setForm(f=>({...f,diaNac:v,fechaNac}));
-      }}
-      style={{...inp,marginBottom:0,textAlign:"center"}}
-    />
-  </div>
-  <div style={{flex:2}}>
-    <p style={{margin:"0 0 4px",fontSize:11,color:G.hint,textAlign:"center"}}>Mes</p>
-    <input
-      type="text" inputMode="numeric" autoComplete="off" maxLength={2} placeholder="06"
-      value={form.mesNac||""}
-      onChange={e=>{
-        const v=e.target.value.replace(/\D/g,"").slice(0,2);
-        const fechaNac=form.diaNac&&v&&form.anioNac&&form.anioNac.length===4?`${form.anioNac}-${String(v).padStart(2,"0")}-${String(form.diaNac).padStart(2,"0")}` :"";
-        setForm(f=>({...f,mesNac:v,fechaNac}));
-      }}
-      style={{...inp,marginBottom:0,textAlign:"center"}}
-    />
-  </div>
-  <div style={{flex:2}}>
-    <p style={{margin:"0 0 4px",fontSize:11,color:G.hint,textAlign:"center"}}>Año</p>
-    <input
-      type="text" inputMode="numeric" autoComplete="off" maxLength={4} placeholder="1990"
-      value={form.anioNac||""}
-      onChange={e=>{
-        const v=e.target.value.replace(/\D/g,"").slice(0,4);
-        const fechaNac=form.diaNac&&form.mesNac&&v&&v.length===4?`${v}-${String(form.mesNac).padStart(2,"0")}-${String(form.diaNac).padStart(2,"0")}` :"";
-        setForm(f=>({...f,anioNac:v,fechaNac}));
-      }}
-      style={{...inp,marginBottom:0,textAlign:"center"}}
-    />
-  </div>
-</div>
-{edad&&<p style={{margin:"6px 0 0",fontSize:12,color:G.hint}}>{edad} años</p>}      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+          <div style={{flex:1}}>
+            <p style={{margin:"0 0 4px",fontSize:11,color:G.hint,textAlign:"center"}}>Día</p>
+            <input
+              type="text" inputMode="numeric" autoComplete="off" maxLength={2} placeholder="15"
+              value={form.diaNac||""}
+              onChange={e=>{
+                const v=e.target.value.replace(/\D/g,"").slice(0,2);
+                const fechaNac=v&&form.mesNac&&form.anioNac&&form.anioNac.length===4?`${form.anioNac}-${String(form.mesNac).padStart(2,"0")}-${String(v).padStart(2,"0")}` :"";
+                setForm(f=>({...f,diaNac:v,fechaNac}));
+              }}
+              style={{...inp,marginBottom:0,textAlign:"center"}}
+            />
+          </div>
+          <div style={{flex:2}}>
+            <p style={{margin:"0 0 4px",fontSize:11,color:G.hint,textAlign:"center"}}>Mes</p>
+            <input
+              type="text" inputMode="numeric" autoComplete="off" maxLength={2} placeholder="06"
+              value={form.mesNac||""}
+              onChange={e=>{
+                const v=e.target.value.replace(/\D/g,"").slice(0,2);
+                const fechaNac=form.diaNac&&v&&form.anioNac&&form.anioNac.length===4?`${form.anioNac}-${String(v).padStart(2,"0")}-${String(form.diaNac).padStart(2,"0")}` :"";
+                setForm(f=>({...f,mesNac:v,fechaNac}));
+              }}
+              style={{...inp,marginBottom:0,textAlign:"center"}}
+            />
+          </div>
+          <div style={{flex:2}}>
+            <p style={{margin:"0 0 4px",fontSize:11,color:G.hint,textAlign:"center"}}>Año</p>
+            <input
+              type="text" inputMode="numeric" autoComplete="off" maxLength={4} placeholder="1990"
+              value={form.anioNac||""}
+              onChange={e=>{
+                const v=e.target.value.replace(/\D/g,"").slice(0,4);
+                const fechaNac=form.diaNac&&form.mesNac&&v&&v.length===4?`${v}-${String(form.mesNac).padStart(2,"0")}-${String(form.diaNac).padStart(2,"0")}` :"";
+                setForm(f=>({...f,anioNac:v,fechaNac}));
+              }}
+              style={{...inp,marginBottom:0,textAlign:"center"}}
+            />
+          </div>
+        </div>
+        {edad&&<p style={{margin:"6px 0 0",fontSize:12,color:G.hint}}>{edad} años</p>}      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
           <label style={lbl}>Peso (kg)</label>
           <input type="number" min="30" max="200" value={form.peso} onChange={e => setForm(f => ({ ...f, peso: e.target.value }))} placeholder="70" style={inp} />
