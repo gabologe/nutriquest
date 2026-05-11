@@ -287,7 +287,7 @@ function MealCard({meal,onDelete,onSave,D}) {
           <p style={{margin:"0 0 8px",color:G.text,fontSize:D.md,lineHeight:1.6}}>{meal.desc}</p>
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
             <Tag bg={scoreBg} color={scoreColor} border={scoreBd} size={14}>⭐ {meal.score}/10</Tag>
-            <Tag size={14}>💪 {meal.protein_g}g</Tag>
+            <Tag size={15}>💪 {meal.protein_g}g</Tag>
             <Tag bg={skinBg[meal.skin_impact]} color={skinC[meal.skin_impact]} border={skinBd[meal.skin_impact]} size={14}>🌿 {meal.skin_impact}</Tag>
             {meal.goal_alignment&&<Tag bg={alignBg[meal.goal_alignment]} color={alignC[meal.goal_alignment]} border={alignBd[meal.goal_alignment]} size={14}>🎯 {meal.goal_alignment}</Tag>}
           </div>
@@ -410,7 +410,7 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
           </button>
         </div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:editingGoals?12:0}}>
-          {(profile.goals||[]).map(g=><span key={g} style={{fontSize:13,background:G.sageLight,color:G.sage,padding:"4px 10px",borderRadius:99,fontWeight:500}}>{GOAL_LABELS[g]||g}</span>)}
+          {(profile.goals||[]).map(g=><span key={g} style={{fontSize:15,background:G.sageLight,color:G.sage,padding:"4px 10px",borderRadius:99,fontWeight:500}}>{GOAL_LABELS[g]||g}</span>)}
         </div>
         {editingGoals&&(
           <div style={{marginTop:8}}>
@@ -507,8 +507,7 @@ function DayCloseModal({todayData,profile,onClose,onSave,D}) {
   );
 }
 
-function PlanTab({todayData,profile,D}) {
-  const [plan,setPlan]=useState(null);
+function PlanTab({todayData,profile,plan,setPlan,D}) {
   const [loading,setLoading]=useState(false);
   const missingSlots=FIXED_SLOTS.filter(s=>!todayData.meals?.[s.id]);
   const consumedCal=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.calories||m.protein_g*4||0),0);
@@ -790,7 +789,7 @@ export default function App() {
   const [snackName,setSnackName]=useState("");
   const [workoutForm,setWorkoutForm]=useState({type:"Fuerza/hipertrofia",duration:45,intensity:3,notes:""});
   const [workoutLoading,setWorkoutLoading]=useState(false);
-  const [showDayClose,setShowDayClose]=useState(false);
+  const [dayPlan,setDayPlan]=useState(null);
 
   const today=todayStr();
   const todayData=days[today]||{meals:{},snacks:[],workout:null};
@@ -819,7 +818,19 @@ export default function App() {
   const handleDeleteMeal=async(slotId)=>{const m={...todayData.meals};delete m[slotId];await updateToday({meals:m});};
   const handleDeleteSnack=async(index)=>{await updateToday({snacks:(todayData.snacks||[]).filter((_,i)=>i!==index)});};
   const handleEditMeal=async(slotId,newDesc,targetDate)=>{
-    const meal={...todayData.meals[slotId],desc:newDesc};
+    const oldMeal=todayData.meals[slotId];
+    const meal={...oldMeal,desc:newDesc,score:undefined,protein_g:undefined,skin_impact:undefined,goal_alignment:undefined,nutrients:undefined,tip:undefined};
+    setMealLoading(l=>({...l,[slotId]:true}));
+    const userGoals=getGoalsText(profile?.goals||[]);
+    const restrictions=profile?.restrictions?`Restricciones alimentarias: ${profile.restrictions}.`:"";
+    try {
+    const result=await callAI(
+    `Analiza esta comida: "${newDesc}". El usuario quiere: ${userGoals}. ${restrictions} Sé honesto. Devuelve SOLO JSON: score (1-10), protein_g (número), skin_impact ("beneficioso"|"neutro"|"inflamatorio"), goal_alignment ("excelente"|"bueno"|"moderado"|"perjudicial"), nutrients ([{name, benefit, negative: bool}] máx 4), tip (string específico).`,
+    "Eres un nutricionista honesto. Responde SOLO con JSON válido."
+  );
+  Object.assign(meal, result);
+} catch { console.error("Error al re-analizar comida editada"); }
+setMealLoading(l=>({...l,[slotId]:false}));
     if(targetDate&&targetDate!==today){
       const toDay=days[targetDate]||{meals:{},snacks:[],workout:null};
       const newFrom={...todayData.meals};delete newFrom[slotId];
@@ -1042,7 +1053,7 @@ export default function App() {
         )}
 
         {tab==="plan"&&(
-          <PlanTab todayData={todayData} profile={profile} D={D}/>
+          <PlanTab todayData={todayData} profile={profile} plan={dayPlan} setPlan={setDayPlan} D={D}/>
         )}
 
       </div>
