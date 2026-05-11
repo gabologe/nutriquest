@@ -7,7 +7,7 @@ const G = {
   sage: "#5a7a54", sageLight: "rgba(138,180,132,0.18)", sageBorder: "rgba(90,122,84,0.3)",
   bg1: "#c8d8c4", bg2: "#e8e0d0", bg3: "#d4cabb",
 };
-const blur = "blur(14px)", blurSm = "blur(8px)";
+const blur = "blur(14px)";
 const glassCard = { background: G.glass, backdropFilter: blur, WebkitBackdropFilter: blur, border: `1px solid ${G.border}`, borderRadius: 18 };
 
 const OBJETIVOS = [
@@ -37,7 +37,18 @@ const RESTRICCIONES_SUGERIDAS = [
   { id: "diabetico", emoji: "🩺", label: "Diabético" },
 ];
 
-function calcTDEE(peso, altura, edad, sexo, factorActividad) {
+function calcEdad(fechaNac) {
+  if (!fechaNac) return null;
+  const hoy = new Date();
+  const nac = new Date(fechaNac);
+  let edad = hoy.getFullYear() - nac.getFullYear();
+  const m = hoy.getMonth() - nac.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
+  return edad > 0 ? edad : null;
+}
+
+function calcTDEE(peso, altura, fechaNac, sexo, factorActividad) {
+  const edad = calcEdad(fechaNac);
   if (!peso || !altura || !edad || !sexo || !factorActividad) return null;
   const bmr = sexo === "masculino"
     ? 88.36 + 13.4 * peso + 4.8 * altura - 5.7 * edad
@@ -49,11 +60,7 @@ function ProgressDots({ total, current }) {
   return (
     <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 28 }}>
       {Array.from({ length: total }).map((_, i) => (
-        <div key={i} style={{
-          width: i === current ? 20 : 8, height: 8, borderRadius: 99,
-          background: i === current ? G.sage : "rgba(255,255,255,0.4)",
-          transition: "all 0.3s ease",
-        }} />
+        <div key={i} style={{ width: i === current ? 20 : 8, height: 8, borderRadius: 99, background: i === current ? G.sage : "rgba(255,255,255,0.4)", transition: "all 0.3s ease" }} />
       ))}
     </div>
   );
@@ -61,14 +68,7 @@ function ProgressDots({ total, current }) {
 
 function Btn({ onClick, disabled, children, full }) {
   return (
-    <button onClick={onClick} disabled={disabled} style={{
-      padding: "13px 24px", borderRadius: 12, border: "none",
-      background: disabled ? "rgba(90,122,84,0.4)" : G.sage,
-      color: "#fff", fontWeight: 600, fontSize: 16,
-      width: full ? "100%" : "auto", fontFamily: "inherit",
-      cursor: disabled ? "not-allowed" : "pointer",
-      transition: "all 0.2s",
-    }}>
+    <button onClick={onClick} disabled={disabled} style={{ padding: "13px 24px", borderRadius: 12, border: "none", background: disabled ? "rgba(90,122,84,0.4)" : G.sage, color: "#fff", fontWeight: 600, fontSize: 16, width: full ? "100%" : "auto", fontFamily: "inherit", cursor: disabled ? "not-allowed" : "pointer", transition: "all 0.2s" }}>
       {children}
     </button>
   );
@@ -76,42 +76,31 @@ function Btn({ onClick, disabled, children, full }) {
 
 function SelectCard({ emoji, label, desc, selected, onClick, disabled }) {
   return (
-    <div onClick={disabled ? undefined : onClick} style={{
-      background: selected ? "rgba(90,122,84,0.15)" : "rgba(255,255,255,0.4)",
-      border: `1.5px solid ${selected ? G.sage : "rgba(255,255,255,0.5)"}`,
-      borderRadius: 12, padding: "14px 16px", cursor: disabled ? "not-allowed" : "pointer",
-      display: "flex", alignItems: "center", gap: 14,
-      transition: "all 0.2s", opacity: disabled ? 0.5 : 1,
-    }}>
+    <div onClick={disabled ? undefined : onClick} style={{ background: selected ? "rgba(90,122,84,0.15)" : "rgba(255,255,255,0.4)", border: `1.5px solid ${selected ? G.sage : "rgba(255,255,255,0.5)"}`, borderRadius: 12, padding: "14px 16px", cursor: disabled ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 14, transition: "all 0.2s", opacity: disabled ? 0.5 : 1 }}>
       <span style={{ fontSize: 24, flexShrink: 0 }}>{emoji}</span>
       <div style={{ flex: 1 }}>
         <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: G.text }}>{label}</p>
         {desc && <p style={{ margin: "2px 0 0", fontSize: 13, color: G.hint }}>{desc}</p>}
       </div>
-      <div style={{
-        width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-        border: `2px solid ${selected ? G.sage : "rgba(180,180,180,0.4)"}`,
-        background: selected ? G.sage : "transparent",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        transition: "all 0.2s",
-      }}>
+      <div style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, border: `2px solid ${selected ? G.sage : "rgba(180,180,180,0.4)"}`, background: selected ? G.sage : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
         {selected && <span style={{ color: "#fff", fontSize: 11, fontWeight: 700 }}>✓</span>}
       </div>
     </div>
   );
 }
 
-// ── Pantalla 1: Bienvenida ─────────────────────────────────────────────────
+function BackBtn({ onClick }) {
+  return (
+    <button onClick={onClick} style={{ padding: "13px 20px", borderRadius: 12, border: `1px solid rgba(180,180,180,0.35)`, background: "transparent", color: G.hint, fontSize: 16, cursor: "pointer", fontFamily: "inherit" }}>Volver</button>
+  );
+}
+
 function StepBienvenida({ onNext }) {
   return (
     <div style={{ textAlign: "center" }}>
       <div style={{ fontSize: 64, marginBottom: 20 }}>🌿</div>
-      <h1 style={{ margin: "0 0 12px", fontSize: 32, fontWeight: 300, color: G.text, letterSpacing: "-0.02em" }}>
-        NutriQuest
-      </h1>
-      <p style={{ margin: "0 0 8px", fontSize: 13, color: G.hint, letterSpacing: "0.06em" }}>
-        TU COMPAÑERO NUTRICIONAL
-      </p>
+      <h1 style={{ margin: "0 0 12px", fontSize: 32, fontWeight: 300, color: G.text, letterSpacing: "-0.02em" }}>NutriQuest</h1>
+      <p style={{ margin: "0 0 8px", fontSize: 13, color: G.hint, letterSpacing: "0.06em" }}>TU COMPAÑERO NUTRICIONAL</p>
       <p style={{ margin: "28px 0 40px", fontSize: 16, color: G.muted, lineHeight: 1.7 }}>
         No te decimos cuántas calorías comiste.<br />
         Te decimos <strong style={{ color: G.sage }}>cómo lo que comés afecta tu cuerpo</strong>,<br />
@@ -122,7 +111,6 @@ function StepBienvenida({ onNext }) {
   );
 }
 
-// ── Pantalla 2: Objetivo ───────────────────────────────────────────────────
 function StepObjetivo({ objetivos, setObjetivos, onNext, onBack }) {
   const toggle = (id) => {
     setObjetivos(prev => {
@@ -137,33 +125,24 @@ function StepObjetivo({ objetivos, setObjetivos, onNext, onBack }) {
       <p style={{ margin: "0 0 20px", fontSize: 14, color: G.hint }}>Podés elegir hasta 3 opciones.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
         {OBJETIVOS.map(o => (
-          <SelectCard
-            key={o.id} emoji={o.emoji} label={o.label} desc={o.desc}
-            selected={objetivos.includes(o.id)}
-            disabled={!objetivos.includes(o.id) && objetivos.length >= 3}
-            onClick={() => toggle(o.id)}
-          />
+          <SelectCard key={o.id} emoji={o.emoji} label={o.label} desc={o.desc} selected={objetivos.includes(o.id)} disabled={!objetivos.includes(o.id) && objetivos.length >= 3} onClick={() => toggle(o.id)} />
         ))}
       </div>
       <div style={{ display: "flex", gap: 10 }}>
-        <button onClick={onBack} style={{ padding: "13px 20px", borderRadius: 12, border: `1px solid rgba(180,180,180,0.35)`, background: "transparent", color: G.hint, fontSize: 16, cursor: "pointer", fontFamily: "inherit" }}>Volver</button>
+        <BackBtn onClick={onBack} />
         <div style={{ flex: 1 }}><Btn onClick={onNext} disabled={objetivos.length === 0} full>Continuar</Btn></div>
       </div>
     </div>
   );
 }
 
-// ── Pantalla 3: Datos personales ───────────────────────────────────────────
 function StepDatos({ form, setForm, onNext, onBack }) {
-  const inp = {
-    width: "100%", background: "rgba(255,255,255,0.5)", border: `1px solid ${G.border}`,
-    borderRadius: 10, color: G.text, padding: "11px 14px", fontSize: 15,
-    boxSizing: "border-box", outline: "none", fontFamily: "inherit",
-  };
+  const inp = { width: "100%", background: "rgba(255,255,255,0.5)", border: `1px solid ${G.border}`, borderRadius: 10, color: G.text, padding: "11px 14px", fontSize: 15, boxSizing: "border-box", outline: "none", fontFamily: "inherit" };
   const lbl = { display: "block", fontSize: 12, color: G.hint, marginBottom: 5, marginTop: 14, letterSpacing: "0.04em", textTransform: "uppercase" };
+  const edad = calcEdad(form.fechaNac);
   const bmi = form.peso && form.altura ? (+form.peso / ((+form.altura / 100) ** 2)).toFixed(1) : null;
   const prot = form.peso ? Math.round(+form.peso * 2) : null;
-  const valid = form.nombre && form.sexo && +form.edad > 0 && +form.peso > 0 && +form.altura > 0;
+  const valid = form.nombre && form.sexo && form.fechaNac && +form.peso > 0 && +form.altura > 0 && edad && edad >= 10;
 
   return (
     <div>
@@ -176,23 +155,17 @@ function StepDatos({ form, setForm, onNext, onBack }) {
       <label style={lbl}>Sexo</label>
       <div style={{ display: "flex", gap: 10, marginBottom: 4 }}>
         {["masculino", "femenino"].map(s => (
-          <div key={s} onClick={() => setForm(f => ({ ...f, sexo: s }))} style={{
-            flex: 1, padding: "11px", borderRadius: 10, textAlign: "center", cursor: "pointer",
-            border: `1.5px solid ${form.sexo === s ? G.sage : "rgba(255,255,255,0.5)"}`,
-            background: form.sexo === s ? "rgba(90,122,84,0.12)" : "rgba(255,255,255,0.4)",
-            fontSize: 15, color: form.sexo === s ? G.sage : G.muted, fontWeight: form.sexo === s ? 600 : 400,
-            transition: "all 0.2s",
-          }}>
+          <div key={s} onClick={() => setForm(f => ({ ...f, sexo: s }))} style={{ flex: 1, padding: "11px", borderRadius: 10, textAlign: "center", cursor: "pointer", border: `1.5px solid ${form.sexo === s ? G.sage : "rgba(255,255,255,0.5)"}`, background: form.sexo === s ? "rgba(90,122,84,0.12)" : "rgba(255,255,255,0.4)", fontSize: 15, color: form.sexo === s ? G.sage : G.muted, fontWeight: form.sexo === s ? 600 : 400, transition: "all 0.2s" }}>
             {s === "masculino" ? "Masculino" : "Femenino"}
           </div>
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-        <div>
-          <label style={lbl}>Edad</label>
-          <input type="number" min="10" max="100" value={form.edad} onChange={e => setForm(f => ({ ...f, edad: e.target.value }))} placeholder="30" style={inp} />
-        </div>
+      <label style={lbl}>Fecha de nacimiento</label>
+      <input type="date" value={form.fechaNac} onChange={e => setForm(f => ({ ...f, fechaNac: e.target.value }))} style={inp} />
+      {edad && <p style={{ margin: "4px 0 0", fontSize: 12, color: G.hint }}>{edad} años</p>}
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
           <label style={lbl}>Peso (kg)</label>
           <input type="number" min="30" max="200" value={form.peso} onChange={e => setForm(f => ({ ...f, peso: e.target.value }))} placeholder="70" style={inp} />
@@ -221,106 +194,76 @@ function StepDatos({ form, setForm, onNext, onBack }) {
       )}
 
       <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-        <button onClick={onBack} style={{ padding: "13px 20px", borderRadius: 12, border: `1px solid rgba(180,180,180,0.35)`, background: "transparent", color: G.hint, fontSize: 16, cursor: "pointer", fontFamily: "inherit" }}>Volver</button>
+        <BackBtn onClick={onBack} />
         <div style={{ flex: 1 }}><Btn onClick={onNext} disabled={!valid} full>Continuar</Btn></div>
       </div>
     </div>
   );
 }
 
-// ── Pantalla 4: Nivel de actividad ─────────────────────────────────────────
 function StepActividad({ actividad, setActividad, form, onNext, onBack }) {
   const factor = ACTIVIDAD.find(a => a.id === actividad)?.factor;
-  const tdee = calcTDEE(+form.peso, +form.altura, +form.edad, form.sexo, factor);
-
+  const tdee = calcTDEE(+form.peso, +form.altura, form.fechaNac, form.sexo, factor);
   return (
     <div>
       <h2 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 500, color: G.text }}>¿Cuánto te movés?</h2>
       <p style={{ margin: "0 0 20px", fontSize: 14, color: G.hint }}>Esto nos ayuda a personalizar tus análisis.</p>
-
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-        {ACTIVIDAD.map(a => (
-          <SelectCard key={a.id} emoji={a.emoji} label={a.label} desc={a.desc} selected={actividad === a.id} onClick={() => setActividad(a.id)} />
-        ))}
+        {ACTIVIDAD.map(a => <SelectCard key={a.id} emoji={a.emoji} label={a.label} desc={a.desc} selected={actividad === a.id} onClick={() => setActividad(a.id)} />)}
       </div>
-
       {tdee && (
         <div style={{ background: G.sageLight, border: `1px solid ${G.sageBorder}`, borderRadius: 10, padding: "14px 16px", marginBottom: 20 }}>
           <p style={{ margin: "0 0 4px", fontSize: 12, color: G.hint, letterSpacing: "0.04em" }}>SEGÚN TU PERFIL</p>
-          <p style={{ margin: 0, fontSize: 16, color: G.muted, lineHeight: 1.6 }}>
-            Tu cuerpo necesita aproximadamente <strong style={{ color: G.sage }}>{tdee.toLocaleString()} calorías por día</strong>.
-          </p>
+          <p style={{ margin: 0, fontSize: 16, color: G.muted, lineHeight: 1.6 }}>Tu cuerpo necesita aproximadamente <strong style={{ color: G.sage }}>{tdee.toLocaleString()} calorías por día</strong>.</p>
         </div>
       )}
-
       <div style={{ display: "flex", gap: 10 }}>
-        <button onClick={onBack} style={{ padding: "13px 20px", borderRadius: 12, border: `1px solid rgba(180,180,180,0.35)`, background: "transparent", color: G.hint, fontSize: 16, cursor: "pointer", fontFamily: "inherit" }}>Volver</button>
+        <BackBtn onClick={onBack} />
         <div style={{ flex: 1 }}><Btn onClick={onNext} disabled={!actividad} full>Continuar</Btn></div>
       </div>
     </div>
   );
 }
 
-// ── Pantalla 5: Restricciones alimentarias ─────────────────────────────────
 function StepRestricciones({ restricciones, setRestricciones, restriccionCustom, setRestriccionCustom, onFinish, onBack, saving }) {
-  const toggle = (id) => {
-    setRestricciones(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
-
+  const toggle = (id) => setRestricciones(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   return (
     <div>
       <h2 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 500, color: G.text }}>¿Tenés alguna restricción?</h2>
       <p style={{ margin: "0 0 20px", fontSize: 14, color: G.hint }}>Opcional. Nos ayuda a darte sugerencias más precisas.</p>
-
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
         {RESTRICCIONES_SUGERIDAS.map(r => {
           const selected = restricciones.includes(r.id);
           return (
-            <div key={r.id} onClick={() => toggle(r.id)} style={{
-              display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12,
-              cursor: "pointer", background: selected ? "rgba(90,122,84,0.12)" : "rgba(255,255,255,0.4)",
-              border: `1.5px solid ${selected ? G.sage : "rgba(255,255,255,0.5)"}`,
-              transition: "all 0.2s",
-            }}>
+            <div key={r.id} onClick={() => toggle(r.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, cursor: "pointer", background: selected ? "rgba(90,122,84,0.12)" : "rgba(255,255,255,0.4)", border: `1.5px solid ${selected ? G.sage : "rgba(255,255,255,0.5)"}`, transition: "all 0.2s" }}>
               <span style={{ fontSize: 18 }}>{r.emoji}</span>
               <span style={{ fontSize: 14, color: selected ? G.sage : G.muted, fontWeight: selected ? 600 : 400 }}>{r.label}</span>
             </div>
           );
         })}
       </div>
-
       <label style={{ display: "block", fontSize: 12, color: G.hint, marginBottom: 8, letterSpacing: "0.04em", textTransform: "uppercase" }}>Otra restricción o preferencia</label>
-      <input
-        value={restriccionCustom}
-        onChange={e => setRestriccionCustom(e.target.value)}
-        placeholder="Ej: no como cerdo, alergia al huevo..."
-        style={{ width: "100%", background: "rgba(255,255,255,0.5)", border: `1px solid ${G.border}`, borderRadius: 10, color: G.text, padding: "11px 14px", fontSize: 15, boxSizing: "border-box", outline: "none", fontFamily: "inherit", marginBottom: 20 }}
-      />
-
+      <input value={restriccionCustom} onChange={e => setRestriccionCustom(e.target.value)} placeholder="Ej: no como cerdo, alergia al huevo..." style={{ width: "100%", background: "rgba(255,255,255,0.5)", border: `1px solid ${G.border}`, borderRadius: 10, color: G.text, padding: "11px 14px", fontSize: 15, boxSizing: "border-box", outline: "none", fontFamily: "inherit", marginBottom: 20 }} />
       <div style={{ display: "flex", gap: 10 }}>
-        <button onClick={onBack} style={{ padding: "13px 20px", borderRadius: 12, border: `1px solid rgba(180,180,180,0.35)`, background: "transparent", color: G.hint, fontSize: 16, cursor: "pointer", fontFamily: "inherit" }}>Volver</button>
-        <div style={{ flex: 1 }}>
-          <Btn onClick={onFinish} disabled={saving} full>
-            {saving ? "Guardando..." : "¡Listo, empezar!"}
-          </Btn>
-        </div>
+        <BackBtn onClick={onBack} />
+        <div style={{ flex: 1 }}><Btn onClick={onFinish} disabled={saving} full>{saving ? "Guardando..." : "¡Listo, empezar!"}</Btn></div>
       </div>
     </div>
   );
 }
 
-// ── Componente principal ───────────────────────────────────────────────────
-export default function Onboarding({ onSave, userId }) {
+export default function Onboarding({ onSave }) {
   const [step, setStep] = useState(0);
   const [objetivos, setObjetivos] = useState([]);
   const [actividad, setActividad] = useState("");
   const [restricciones, setRestricciones] = useState([]);
   const [restriccionCustom, setRestriccionCustom] = useState("");
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ nombre: "", sexo: "", edad: "", peso: "", altura: "" });
+  const [form, setForm] = useState({ nombre: "", sexo: "", fechaNac: "", peso: "", altura: "" });
 
   const factor = ACTIVIDAD.find(a => a.id === actividad)?.factor;
-  const tdee = calcTDEE(+form.peso, +form.altura, +form.edad, form.sexo, factor);
+  const tdee = calcTDEE(+form.peso, +form.altura, form.fechaNac, form.sexo, factor);
+  const edad = calcEdad(form.fechaNac);
 
   const handleFinish = async () => {
     setSaving(true);
@@ -328,20 +271,21 @@ export default function Onboarding({ onSave, userId }) {
       ...restricciones.map(r => RESTRICCIONES_SUGERIDAS.find(x => x.id === r)?.label || r),
       ...(restriccionCustom.trim() ? [restriccionCustom.trim()] : []),
     ].join(", ");
-
     const perfil = {
       name: form.nombre,
       weight: +form.peso,
       height: +form.altura,
-      age: +form.edad,
+      fechaNac: form.fechaNac,
+      age: edad,
       sex: form.sexo,
       activity: actividad,
       goals: objetivos,
-      tdee: tdee,
+      tdee,
       restrictions: allRestrictions || null,
       onboarded: true,
     };
-    await onSave(perfil);
+    try { await onSave(perfil); }
+    catch (e) { console.error("Error al guardar perfil:", e); alert("Hubo un error al guardar. Intentá de nuevo."); }
     setSaving(false);
   };
 
@@ -354,11 +298,7 @@ export default function Onboarding({ onSave, userId }) {
   ];
 
   return (
-    <div style={{
-      fontFamily: "'Segoe UI',system-ui,sans-serif", minHeight: "100vh",
-      background: `linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,
-      display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
-    }}>
+    <div style={{ fontFamily: "'Segoe UI',system-ui,sans-serif", minHeight: "100vh", background: `linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <div style={{ ...glassCard, padding: 32, maxWidth: 460, width: "100%" }}>
         <ProgressDots total={5} current={step} />
         {steps[step]}
