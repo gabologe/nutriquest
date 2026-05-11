@@ -140,13 +140,12 @@ function Slider({min,max,step,value,onChange,label}) {
 }
 
 function AuthScreen() {
+  const [isLogin,setIsLogin]=useState(true);
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
-  const [isLogin,setIsLogin]=useState(true);
   const [loading,setLoading]=useState(false);
   const [message,setMessage]=useState("");
-  const inp={width:"100%",background:"rgba(255,255,255,0.5)",border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"12px 14px",fontSize:16,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
-  const lbl={display:"block",fontSize:13,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
+
   const handleSubmit=async()=>{
     if(!email||!password)return;
     setLoading(true);setMessage("");
@@ -154,29 +153,96 @@ function AuthScreen() {
     if(error)setMessage(error.message);else if(!isLogin)setMessage("Revisá tu email para confirmar tu cuenta.");
     setLoading(false);
   };
+
   return (
-    <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-      <div style={{...glassCard,padding:36,maxWidth:400,width:"100%"}}>
-        <div style={{textAlign:"center",marginBottom:30}}>
-          <div style={{fontSize:44,marginBottom:12}}>🌿</div>
-          <h1 style={{margin:0,fontSize:28,fontWeight:300,color:G.text,letterSpacing:"-0.02em"}}>NutriQuest</h1>
-          <p style={{margin:"8px 0 0",fontSize:13,color:G.hint,letterSpacing:"0.03em"}}>TU COMPAÑERO NUTRICIONAL</p>
+    <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(175deg,#3d6b47 0%,#5a7a54 30%,#87a882 65%,#c8d8c4 100%)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-end",position:"relative",overflow:"hidden"}}>
+
+      {/* Logo arriba */}
+      <div style={{position:"absolute",top:40,left:0,right:0,textAlign:"center",zIndex:1}}>
+        <div style={{fontSize:40,marginBottom:8}}>🌿</div>
+        <p style={{margin:0,fontSize:22,fontWeight:300,color:"#fff",letterSpacing:"-0.02em"}}>NutriQuest</p>
+        <p style={{margin:"6px 0 0",fontSize:12,color:"rgba(255,255,255,0.7)",letterSpacing:"0.08em",textTransform:"uppercase"}}>Tu compañero nutricional</p>
+      </div>
+
+      {/* Ilustración plantas SVG */}
+      <svg viewBox="0 0 400 180" xmlns="http://www.w3.org/2000/svg" style={{position:"absolute",bottom:280,left:0,right:0,width:"100%",zIndex:1}}>
+        {/* colinas */}
+        <ellipse cx="100" cy="165" rx="160" ry="60" fill="rgba(255,255,255,0.06)"/>
+        <ellipse cx="310" cy="170" rx="150" ry="55" fill="rgba(255,255,255,0.06)"/>
+        {/* planta izquierda grande */}
+        <line x1="40" y1="175" x2="40" y2="110" stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round"/>
+        <ellipse cx="40" cy="98" rx="14" ry="20" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2"/>
+        <line x1="28" y1="145" x2="14" y2="128" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round"/>
+        <ellipse cx="10" cy="122" rx="10" ry="14" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.35)" strokeWidth="1"/>
+        {/* planta izquierda chica */}
+        <line x1="100" y1="175" x2="100" y2="138" stroke="rgba(255,255,255,0.45)" strokeWidth="1.5" strokeLinecap="round"/>
+        <ellipse cx="100" cy="128" rx="11" ry="16" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
+        {/* planta centro */}
+        <line x1="200" y1="175" x2="200" y2="120" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round"/>
+        <ellipse cx="200" cy="108" rx="16" ry="22" fill="rgba(255,255,255,0.16)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2"/>
+        <line x1="188" y1="150" x2="172" y2="135" stroke="rgba(255,255,255,0.35)" strokeWidth="1.2" strokeLinecap="round"/>
+        <ellipse cx="167" cy="129" rx="9" ry="13" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.25)" strokeWidth="1"/>
+        {/* planta derecha chica */}
+        <line x1="300" y1="175" x2="300" y2="140" stroke="rgba(255,255,255,0.45)" strokeWidth="1.5" strokeLinecap="round"/>
+        <ellipse cx="300" cy="130" rx="12" ry="17" fill="rgba(255,255,255,0.13)" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
+        {/* planta derecha grande */}
+        <line x1="360" y1="175" x2="360" y2="115" stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round"/>
+        <ellipse cx="360" cy="103" rx="14" ry="19" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2"/>
+        <line x1="372" y1="148" x2="386" y2="133" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round"/>
+        <ellipse cx="390" cy="127" rx="10" ry="14" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.35)" strokeWidth="1"/>
+        {/* hojitas sueltas */}
+        <ellipse cx="150" cy="158" rx="7" ry="11" fill="rgba(255,255,255,0.09)" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" transform="rotate(-20 150 158)"/>
+        <ellipse cx="245" cy="162" rx="6" ry="9" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.18)" strokeWidth="0.8" transform="rotate(15 245 162)"/>
+      </svg>
+
+      {/* Sheet glassmorphism */}
+      <div style={{position:"relative",zIndex:2,width:"100%",maxWidth:480,background:"rgba(255,255,255,0.22)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.45)",borderRadius:"28px 28px 0 0",padding:"28px 28px 40px"}}>
+
+        {/* Tabs */}
+        <div style={{display:"flex",marginBottom:24,borderBottom:"1px solid rgba(255,255,255,0.25)"}}>
+          {["Iniciar sesión","Registrarse"].map((label,i)=>{
+            const active=(i===0&&isLogin)||(i===1&&!isLogin);
+            return (
+              <button key={i} onClick={()=>{setIsLogin(i===0);setMessage("");}} style={{flex:1,padding:"10px 0",background:"transparent",border:"none",borderBottom:`2px solid ${active?"#fff":"transparent"}`,marginBottom:-1,cursor:"pointer",fontSize:15,fontWeight:active?600:400,color:active?"#fff":"rgba(255,255,255,0.5)",fontFamily:"inherit",transition:"all 0.2s"}}>
+                {label}
+              </button>
+            );
+          })}
         </div>
-        <label style={lbl}>Email</label>
-        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" style={inp} onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
-        <label style={lbl}>Contraseña</label>
-        <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" style={inp} onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
-        {message&&<div style={{background:message.includes("email")?G.sageLight:G.redLight,border:`1px solid ${message.includes("email")?G.sageBorder:"rgba(180,80,80,0.25)"}`,borderRadius:8,padding:"10px 14px",fontSize:14,color:message.includes("email")?G.sage:G.red,marginBottom:8}}>{message}</div>}
-        <div style={{marginTop:16}}><Btn onClick={handleSubmit} loading={loading} full>{isLogin?"Iniciar sesión":"Registrarme"}</Btn></div>
-        <p onClick={()=>{setIsLogin(l=>!l);setMessage("");}} style={{textAlign:"center",marginTop:20,fontSize:14,color:G.hint,cursor:"pointer",userSelect:"none"}}>
+
+        {/* Campos */}
+        <input
+          type="email" value={email} onChange={e=>setEmail(e.target.value)}
+          placeholder="Email"
+          onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
+          style={{width:"100%",background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.4)",borderRadius:99,color:"#fff",padding:"13px 20px",fontSize:15,boxSizing:"border-box",outline:"none",fontFamily:"inherit",marginBottom:12}}
+        />
+        <input
+          type="password" value={password} onChange={e=>setPassword(e.target.value)}
+          placeholder="Contraseña"
+          onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
+          style={{width:"100%",background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.4)",borderRadius:99,color:"#fff",padding:"13px 20px",fontSize:15,boxSizing:"border-box",outline:"none",fontFamily:"inherit",marginBottom:16}}
+        />
+
+        {message&&(
+          <div style={{background:message.includes("email")?"rgba(90,122,84,0.4)":"rgba(180,80,80,0.3)",border:`1px solid ${message.includes("email")?"rgba(255,255,255,0.4)":"rgba(255,150,150,0.4)"}`,borderRadius:12,padding:"10px 16px",fontSize:14,color:"#fff",marginBottom:16}}>
+            {message}
+          </div>
+        )}
+
+        <Btn onClick={handleSubmit} loading={loading} full>
+          {isLogin?"Entrar":"Crear cuenta"}
+        </Btn>
+
+        <p onClick={()=>{setIsLogin(l=>!l);setMessage("");}} style={{textAlign:"center",marginTop:16,fontSize:13,color:"rgba(255,255,255,0.65)",cursor:"pointer",userSelect:"none"}}>
           {isLogin?"¿No tenés cuenta? ":"¿Ya tenés cuenta? "}
-          <span style={{color:G.sage,fontWeight:600}}>{isLogin?"Registrate":"Iniciá sesión"}</span>
+          <span style={{color:"#fff",fontWeight:600}}>{isLogin?"Registrate":"Iniciá sesión"}</span>
         </p>
+
       </div>
     </div>
   );
 }
-
 function Btn({onClick,loading,children,full,disabled,variant="primary"}) {
   const base={padding:"11px 20px",borderRadius:10,border:"none",fontWeight:600,fontSize:16,width:full?"100%":"auto",fontFamily:"inherit",letterSpacing:"0.02em",transition:"all 0.2s",cursor:loading||disabled?"not-allowed":"pointer",opacity:loading||disabled?0.8:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8};
   const styles=variant==="secondary"?{...base,background:"transparent",color:G.hint,border:`1px solid rgba(180,180,180,0.35)`}:{...base,background:"#5a7a54",color:"#fff"};
