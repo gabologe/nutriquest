@@ -165,6 +165,7 @@ function StepDatos({ form, setForm, onNext, onBack }) {
 <label style={lbl}>Fecha de nacimiento</label>
 <input
   type="text"
+  autoComplete="off"
   inputMode="text"
   placeholder="ej: 15/06/1990"
   value={form.fechaTexto||""}
