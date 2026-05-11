@@ -162,37 +162,25 @@ function StepDatos({ form, setForm, onNext, onBack }) {
       </div>
 
       <label style={lbl}>Fecha de nacimiento</label>
-<div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1.5fr", gap: 8 }}>
-  <div>
-    <p style={{ margin: "0 0 4px", fontSize: 11, color: G.hint, textAlign: "center" }}>Día</p>
-    <input
-      type="number" min="1" max="31" placeholder="DD"
-      value={form.diaNac||""}
-      onChange={e => setForm(f => ({ ...f, diaNac: e.target.value, fechaNac: e.target.value && f.mesNac && f.anioNac ? `${f.anioNac}-${String(f.mesNac).padStart(2,"0")}-${String(e.target.value).padStart(2,"0")}` : "" }))}
-      style={{ ...inp, marginBottom: 0, textAlign: "center" }}
-    />
-  </div>
-  <div>
-    <p style={{ margin: "0 0 4px", fontSize: 11, color: G.hint, textAlign: "center" }}>Mes</p>
-    <input
-      type="number" min="1" max="12" placeholder="MM"
-      value={form.mesNac||""}
-      onChange={e => setForm(f => ({ ...f, mesNac: e.target.value, fechaNac: f.diaNac && e.target.value && f.anioNac ? `${f.anioNac}-${String(e.target.value).padStart(2,"0")}-${String(f.diaNac).padStart(2,"0")}` : "" }))}
-      style={{ ...inp, marginBottom: 0, textAlign: "center" }}
-    />
-  </div>
-  <div>
-    <p style={{ margin: "0 0 4px", fontSize: 11, color: G.hint, textAlign: "center" }}>Año</p>
-    <input
-      type="number" min="1924" max="2008" placeholder="AAAA"
-      value={form.anioNac||""}
-      onChange={e => setForm(f => ({ ...f, anioNac: e.target.value, fechaNac: f.diaNac && f.mesNac && e.target.value ? `${e.target.value}-${String(f.mesNac).padStart(2,"0")}-${String(f.diaNac).padStart(2,"0")}` : "" }))}
-      style={{ ...inp, marginBottom: 0, textAlign: "center" }}
-    />
-  </div>
-</div>
-{edad && <p style={{ margin: "6px 0 0", fontSize: 12, color: G.hint }}>{edad} años</p>}
-
+<label style={lbl}>Fecha de nacimiento</label>
+<input
+  type="text"
+  inputMode="numeric"
+  placeholder="DD/MM/AAAA"
+  value={form.fechaTexto||""}
+  onChange={e=>{
+    let v=e.target.value.replace(/\D/g,"");
+    if(v.length>8)v=v.slice(0,8);
+    let masked=v;
+    if(v.length>4)masked=v.slice(0,2)+"/"+v.slice(2,4)+"/"+v.slice(4);
+    else if(v.length>2)masked=v.slice(0,2)+"/"+v.slice(2);
+    const dia=v.slice(0,2),mes=v.slice(2,4),anio=v.slice(4,8);
+    const fechaNac=anio.length===4?`${anio}-${mes}-${dia}`:"";
+    setForm(f=>({...f,fechaTexto:masked,fechaNac,diaNac:dia,mesNac:mes,anioNac:anio}));
+  }}
+  style={{...inp,marginBottom:0}}
+/>
+{edad&&<p style={{margin:"6px 0 0",fontSize:12,color:G.hint}}>{edad} años</p>}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
           <label style={lbl}>Peso (kg)</label>
@@ -287,7 +275,7 @@ export default function Onboarding({ onSave }) {
   const [restricciones, setRestricciones] = useState([]);
   const [restriccionCustom, setRestriccionCustom] = useState("");
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ nombre: "", sexo: "", fechaNac: "", diaNac: "", mesNac: "", anioNac: "", peso: "", altura: "" });
+  const [form, setForm] = useState({ nombre: "", sexo: "", fechaNac: "", fechaTexto: "", diaNac: "", mesNac: "", anioNac: "", peso: "", altura: "" });
 
   const factor = ACTIVIDAD.find(a => a.id === actividad)?.factor;
   const tdee = calcTDEE(+form.peso, +form.altura, form.fechaNac, form.sexo, factor);
