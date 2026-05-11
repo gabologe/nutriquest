@@ -165,7 +165,7 @@ function StepDatos({ form, setForm, onNext, onBack }) {
 <label style={lbl}>Fecha de nacimiento</label>
 <input
   type="text"
-  inputMode="numeric"
+  inputMode="text"
   placeholder="DD/MM/AAAA"
   value={form.fechaTexto||""}
   onChange={e=>{
