@@ -163,32 +163,35 @@ function StepDatos({ form, setForm, onNext, onBack }) {
 
       <label style={lbl}>Fecha de nacimiento</label>
 <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1.5fr", gap: 8 }}>
-  <select
-    value={form.diaNac||""}
-    onChange={e=>setForm(f=>({...f,diaNac:e.target.value,fechaNac:e.target.value&&f.mesNac&&f.anioNac?`${f.anioNac}-${String(f.mesNac).padStart(2,"0")}-${String(e.target.value).padStart(2,"0")}`:""}))}
-    style={{...inp,marginBottom:0}}
-  >
-    <option value="">Día</option>
-    {Array.from({length:31},(_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}
-  </select>
-  <select
-    value={form.mesNac||""}
-    onChange={e=>setForm(f=>({...f,mesNac:e.target.value,fechaNac:f.diaNac&&e.target.value&&f.anioNac?`${f.anioNac}-${String(e.target.value).padStart(2,"0")}-${String(f.diaNac).padStart(2,"0")}`:""}))}
-    style={{...inp,marginBottom:0}}
-  >
-    <option value="">Mes</option>
-    {["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"].map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}
-  </select>
-  <select
-    value={form.anioNac||""}
-    onChange={e=>setForm(f=>({...f,anioNac:e.target.value,fechaNac:f.diaNac&&f.mesNac&&e.target.value?`${e.target.value}-${String(f.mesNac).padStart(2,"0")}-${String(f.diaNac).padStart(2,"0")}`:""}))}
-    style={{...inp,marginBottom:0}}
-  >
-    <option value="">Año</option>
-    {Array.from({length:100},(_,i)=>new Date().getFullYear()-18-i).map(y=><option key={y} value={y}>{y}</option>)}
-  </select>
+  <div>
+    <p style={{ margin: "0 0 4px", fontSize: 11, color: G.hint, textAlign: "center" }}>Día</p>
+    <input
+      type="number" min="1" max="31" placeholder="DD"
+      value={form.diaNac||""}
+      onChange={e => setForm(f => ({ ...f, diaNac: e.target.value, fechaNac: e.target.value && f.mesNac && f.anioNac ? `${f.anioNac}-${String(f.mesNac).padStart(2,"0")}-${String(e.target.value).padStart(2,"0")}` : "" }))}
+      style={{ ...inp, marginBottom: 0, textAlign: "center" }}
+    />
+  </div>
+  <div>
+    <p style={{ margin: "0 0 4px", fontSize: 11, color: G.hint, textAlign: "center" }}>Mes</p>
+    <input
+      type="number" min="1" max="12" placeholder="MM"
+      value={form.mesNac||""}
+      onChange={e => setForm(f => ({ ...f, mesNac: e.target.value, fechaNac: f.diaNac && e.target.value && f.anioNac ? `${f.anioNac}-${String(e.target.value).padStart(2,"0")}-${String(f.diaNac).padStart(2,"0")}` : "" }))}
+      style={{ ...inp, marginBottom: 0, textAlign: "center" }}
+    />
+  </div>
+  <div>
+    <p style={{ margin: "0 0 4px", fontSize: 11, color: G.hint, textAlign: "center" }}>Año</p>
+    <input
+      type="number" min="1924" max="2008" placeholder="AAAA"
+      value={form.anioNac||""}
+      onChange={e => setForm(f => ({ ...f, anioNac: e.target.value, fechaNac: f.diaNac && f.mesNac && e.target.value ? `${e.target.value}-${String(f.mesNac).padStart(2,"0")}-${String(f.diaNac).padStart(2,"0")}` : "" }))}
+      style={{ ...inp, marginBottom: 0, textAlign: "center" }}
+    />
+  </div>
 </div>
-{edad&&<p style={{margin:"6px 0 0",fontSize:12,color:G.hint}}>{edad} años</p>}
+{edad && <p style={{ margin: "6px 0 0", fontSize: 12, color: G.hint }}>{edad} años</p>}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
