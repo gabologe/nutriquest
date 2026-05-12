@@ -594,16 +594,16 @@ function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showR
   const SectionBtn=({id,label})=>{
   const active=section===id;
   return(
-    <button onClick={()=>setSection(id)} style={{flex:1,padding:"6px 4px",background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:D.sm,fontWeight:active?600:400,color:active?G.sage:G.hint,transition:"all 0.2s",letterSpacing:"0.02em",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-      {label}
-      <div style={{height:3,borderRadius:99,background:active?G.sage:"transparent",width:active?"100%":"0%",transition:"all 0.25s ease"}}/>
+    <button onClick={()=>setSection(id)} style={{flex:1,padding:"6px 4px 0",background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:D.sm,fontWeight:active?600:400,color:active?G.sage:G.hint,transition:"all 0.2s",letterSpacing:"0.02em",display:"flex",flexDirection:"column",alignItems:"center",gap:3,marginBottom:-1.5}}>
+      <span>{label}</span>
+      <div style={{height:3,borderRadius:99,background:active?G.sage:"transparent",width:active?"auto":"0%",alignSelf:"stretch",maxWidth:"fit-content",transition:"all 0.25s ease"}}/>
     </button>
   );
 };
 
 return(
     <div>
-      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid rgba(255,255,255,0.3)`}}>
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1.5px solid rgba(138,180,132,0.3)`,position:"relative"}}>
         <SectionBtn id="metricas" label="Métricas"/><SectionBtn id="historial" label="Historial"/><SectionBtn id="badges" label="Badges"/>
       </div>
       {section==="metricas"&&<div>
