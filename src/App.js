@@ -591,8 +591,7 @@ function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showR
   const calDays=Array.from({length:30},(_,i)=>{const d=new Date();d.setDate(d.getDate()-29+i);const day=days[getKey(d)];return day&&(Object.keys(day.meals||{}).length>0||(day.snacks||[]).length>0||day.workout);});
   const gap=period==="month"?1:3;
   const PeriodBtn=({id,label})=><button onClick={()=>setPeriod(id)} style={{padding:"7px 16px",borderRadius:99,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:D.sm,fontWeight:period===id?600:400,background:period===id?"rgba(90,122,84,0.2)":"transparent",color:period===id?G.sage:G.hint}}>{label}</button>;
-  const SectionBtn=({id,label})=><button onClick={()=>setSection(id)} style={{flex:1,padding:"6px 4px",background:"transparent",border:"none",borderBottom:`2px solid ${section===id?G.sage:"transparent"}`,cursor:"pointer",fontFamily:"inherit",fontSize:D.sm,fontWeight:section===id?500:400,color:section===id?G.sage:G.hint,transition:"all 0.2s",letterSpacing:"0.02em"}}>{label}</button>;
-
+  const SectionBtn=({id,label})=><button onClick={()=>setSection(id)} style={{flex:1,padding:"6px 4px",background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:D.sm,fontWeight:section===id?600:400,color:section===id?G.sage:G.hint,transition:"all 0.2s",letterSpacing:"0.02em",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>{label}<div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid rgba(138,180,132,0.35)`}}>
   return(
     <div>
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid rgba(255,255,255,0.3)`}}>
