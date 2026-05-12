@@ -594,7 +594,7 @@ function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showR
   const SectionBtn=({id,label})=>{
   const active=section===id;
   return(
-    <button onClick={()=>setSection(id)} style={{flex:1,padding:"6px 4px",background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:D.sm,fontWeight:active?600:400,color:active?G.sage:G.hint,transition:"all 0.2s",letterSpacing:"0.02em",display:"flex",flexDirection:"column",alignItems:"center",gap:0,marginBottom:-1.5}}>
+    <button onClick={()=>setSection(id)} style={{flex:1,padding:"6px 4px",background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:D.sm,fontWeight:active?600:400,color:active?G.sage:G.hint,transition:"all 0.2s",letterSpacing:"0.02em",display:"flex",flexDirection:"column",alignItems:"center",gap:0,style={{...marginBottom:-2.5}}}}>
       <span style={{paddingBottom:4}}>{label}</span>
       <span style={{display:"block",height:3,borderRadius:99,background:active?G.sage:"transparent",transition:"background 0.2s"}}>{label.replace(/./g,"\u00A0")}</span>
     </button>
