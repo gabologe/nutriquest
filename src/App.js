@@ -970,7 +970,7 @@ export default function App() {
                 <Btn onClick={()=>setShowDayClose(true)} full>Cerrar el día</Btn>
               </div>
             )}
-          </div>
+          
         </div>}
 
         {tab==="progress"&&<ProgressTab days={days} fetchWeekSummary={fetchWeekSummary} weekSummaryLoading={weekSummaryLoading} weekSummary={weekSummary} showRanking={showRanking} setShowRanking={setShowRanking} badges={badges} workoutGoal={workoutGoal} setWorkoutGoal={setWorkoutGoal} D={D}/>}
