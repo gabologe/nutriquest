@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const G = {
   glass: "rgba(255,255,255,0.55)", glassDark: "rgba(255,255,255,0.35)",
@@ -134,7 +134,98 @@ function StepObjetivo({ objetivos, setObjetivos, onNext, onBack }) {
     </div>
   );
 }
+const MESES_LABELS=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const ITEM_H=48;
 
+function FechaPicker({diaNac,mesNac,anioNac,onChange}) {
+  const isMobile=window.innerWidth<768;
+  const inp={background:"rgba(255,255,255,0.5)",border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"11px 14px",fontSize:15,boxSizing:"border-box",outline:"none",fontFamily:"inherit",width:"100%"};
+
+  const buildFecha=(d,m,a)=>{
+    const fechaNac=d&&m&&a&&a.length===4?`${a}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`:"";
+    return{diaNac:d,mesNac:m,anioNac:a,fechaNac};
+  };
+
+  // ── DESKTOP: tres selects ──────────────────────────────────────
+  if (!isMobile) return (
+    <div style={{display:"flex",gap:8}}>
+      <div style={{flex:1}}>
+        <p style={{margin:"0 0 4px",fontSize:11,color:G.hint,textAlign:"center"}}>Día</p>
+        <select value={diaNac} onChange={e=>onChange(buildFecha(e.target.value,mesNac,anioNac))} style={inp}>
+          <option value="">Día</option>
+          {Array.from({length:31},(_,i)=><option key={i+1} value={String(i+1).padStart(2,"0")}>{i+1}</option>)}
+        </select>
+      </div>
+      <div style={{flex:2}}>
+        <p style={{margin:"0 0 4px",fontSize:11,color:G.hint,textAlign:"center"}}>Mes</p>
+        <select value={mesNac} onChange={e=>onChange(buildFecha(diaNac,e.target.value,anioNac))} style={inp}>
+          <option value="">Mes</option>
+          {MESES_LABELS.map((m,i)=><option key={i+1} value={String(i+1).padStart(2,"0")}>{m}</option>)}
+        </select>
+      </div>
+      <div style={{flex:1.5}}>
+        <p style={{margin:"0 0 4px",fontSize:11,color:G.hint,textAlign:"center"}}>Año</p>
+        <select value={anioNac} onChange={e=>onChange(buildFecha(diaNac,mesNac,e.target.value))} style={inp}>
+          <option value="">Año</option>
+          {Array.from({length:90},(_,i)=>2008-i).map(y=><option key={y} value={String(y)}>{y}</option>)}
+        </select>
+      </div>
+    </div>
+  );
+
+  // ── MOBILE: columnas de scroll ─────────────────────────────────
+  const days=Array.from({length:31},(_,i)=>String(i+1).padStart(2,"0"));
+  const years=Array.from({length:90},(_,i)=>String(2008-i));
+  const initDay=diaNac?days.indexOf(diaNac):14;
+  const initMonth=mesNac?+mesNac-1:4;
+  const initYear=anioNac?years.indexOf(anioNac):18;
+
+  const colStyle={flex:1,overflow:"hidden",position:"relative",borderRadius:10,background:"rgba(255,255,255,0.3)"};
+  const innerStyle={overflowY:"scroll",height:160,scrollSnapType:"y mandatory",padding:`${ITEM_H*1.5}px 0`,scrollbarWidth:"none"};
+
+  useEffect(()=>{
+    ["day","month","year"].forEach(id=>{
+      const el=document.getElementById(`nq-picker-${id}`);
+      if(el){
+        const idxMap={day:initDay,month:initMonth,year:initYear};
+        el.scrollTop=idxMap[id]*ITEM_H;
+      }
+    });
+  },[]);
+
+  const handleScroll=(id)=>{
+    const el=document.getElementById(`nq-picker-${id}`);
+    if(!el)return;
+    const idx=Math.round(el.scrollTop/ITEM_H);
+    const d=id==="day"?days[idx]:diaNac;
+    const m=id==="month"?String(idx+1).padStart(2,"0"):mesNac;
+    const y=id==="year"?years[idx]:anioNac;
+    onChange(buildFecha(d,m,y));
+  };
+
+  const renderCol=(id,items,initIdx)=>(
+    <div style={colStyle}>
+      <div style={{position:"absolute",top:0,left:0,right:0,height:ITEM_H*1.5,background:`linear-gradient(to bottom,rgba(255,255,255,0.5),transparent)`,pointerEvents:"none",zIndex:2}}/>
+      <div style={{position:"absolute",bottom:0,left:0,right:0,height:ITEM_H*1.5,background:`linear-gradient(to top,rgba(255,255,255,0.5),transparent)`,pointerEvents:"none",zIndex:2}}/>
+      <div style={{position:"absolute",top:ITEM_H*1.5,left:0,right:0,height:ITEM_H,borderTop:`1px solid ${G.sageBorder}`,borderBottom:`1px solid ${G.sageBorder}`,pointerEvents:"none",zIndex:1}}/>
+      <div id={`nq-picker-${id}`} style={innerStyle} onScrollCapture={()=>handleScroll(id)}>
+        <style>{`#nq-picker-${id}::-webkit-scrollbar{display:none}`}</style>
+        {items.map((item,i)=>{
+          const curIdx=id==="day"?days.indexOf(diaNac||days[initDay]):id==="month"?(mesNac?+mesNac-1:initMonth):years.indexOf(anioNac||years[initYear]);
+          return <div key={i} style={{height:ITEM_H,display:"flex",alignItems:"center",justifyContent:"center",scrollSnapAlign:"center",fontSize:i===curIdx?18:15,fontWeight:i===curIdx?600:400,color:i===curIdx?G.sage:G.hint,transition:"all 0.15s"}}>{id==="month"?MESES_LABELS[i]:item}</div>;
+        })}
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{display:"flex",gap:8,height:160}}>
+      {renderCol("day",days,initDay)}
+      {renderCol("month",MESES_LABELS,initMonth)}
+      {renderCol("year",years,initYear)}
+    </div>
+  );
+}
 function StepDatos({ form, setForm, onNext, onBack }) {
   const inp = { width: "100%", background: "rgba(255,255,255,0.5)", border: `1px solid ${G.border}`, borderRadius: 10, color: G.text, padding: "11px 14px", fontSize: 15, boxSizing: "border-box", outline: "none", fontFamily: "inherit" };
   const lbl = { display: "block", fontSize: 12, color: G.hint, marginBottom: 5, marginTop: 14, letterSpacing: "0.04em", textTransform: "uppercase" };
@@ -180,56 +271,15 @@ function StepDatos({ form, setForm, onNext, onBack }) {
         ))}
       </div>
 
-      <label style={lbl}>Fecha de nacimiento</label>
-      <div style={{ display: "flex", gap: 8 }}>
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: "0 0 4px", fontSize: 11, color: G.hint, textAlign: "center" }}>Día</p>
-          <input
-            type="text"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck="false"
-            maxLength={2}
-            placeholder="15"
-            value={form.diaNac || ""}
-            onChange={handleDia}
-            style={{ ...inp, textAlign: "center" }}
-          />
-        </div>
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: "0 0 4px", fontSize: 11, color: G.hint, textAlign: "center" }}>Mes</p>
-          <input
-            type="text"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck="false"
-            maxLength={2}
-            placeholder="06"
-            value={form.mesNac || ""}
-            onChange={handleMes}
-            style={{ ...inp, textAlign: "center" }}
-          />
-        </div>
-        <div style={{ flex: 2 }}>
-          <p style={{ margin: "0 0 4px", fontSize: 11, color: G.hint, textAlign: "center" }}>Año</p>
-          <input
-            type="text"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck="false"
-            maxLength={4}
-            placeholder="1990"
-            value={form.anioNac || ""}
-            onChange={handleAnio}
-            style={{ ...inp, textAlign: "center" }}
-          />
-        </div>
-      </div>
-      {edad && <p style={{ margin: "6px 0 0", fontSize: 12, color: G.hint }}>{edad} años</p>}
-
+     <label style={lbl}>Fecha de nacimiento</label>
+<FechaPicker
+  diaNac={form.diaNac||""}
+  mesNac={form.mesNac||""}
+  anioNac={form.anioNac||""}
+  onChange={({diaNac,mesNac,anioNac,fechaNac})=>setForm(f=>({...f,diaNac,mesNac,anioNac,fechaNac}))}
+/>
+{edad&&<p style={{margin:"6px 0 0",fontSize:12,color:G.hint}}>{edad} años</p>}
+  
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 4 }}>
         <div>
           <label style={lbl}>Peso (kg)</label>
