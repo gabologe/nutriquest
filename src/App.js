@@ -17,10 +17,6 @@ const G = {
 };
 const blur="blur(14px)",blurSm="blur(8px)";
 
-const LEVELS=[
-  {name:"Novato",emoji:"🌱",xp:0},{name:"Aprendiz",emoji:"🌿",xp:200},
-  {name:"Consciente",emoji:"🍃",xp:500},{name:"Atleta",emoji:"🌾",xp:1000},{name:"Leyenda",emoji:"🌳",xp:2000},
-];
 const BADGES_DEF=[
   {id:"first_meal",emoji:"🍽️",name:"Primer registro",desc:"Registraste tu primera comida"},
   {id:"week_complete",emoji:"📅",name:"Semana completa",desc:"7 días registrando"},
@@ -45,17 +41,17 @@ const GOAL_LABELS={
 const ACTIVIDAD_FACTOR={sedentario:1.2,ligero:1.375,moderado:1.55,activo:1.725,muy_activo:1.9};
 
 function calcEdad(fechaNac) {
-  if (!fechaNac) return null;
+  if(!fechaNac)return null;
   const hoy=new Date(),nac=new Date(fechaNac);
   let edad=hoy.getFullYear()-nac.getFullYear();
   const m=hoy.getMonth()-nac.getMonth();
-  if (m<0||(m===0&&hoy.getDate()<nac.getDate())) edad--;
+  if(m<0||(m===0&&hoy.getDate()<nac.getDate()))edad--;
   return edad>0?edad:null;
 }
 
 function calcTDEE(peso,altura,fechaNac,sexo,actividad) {
-  const edad=calcEdad(fechaNac);
-  if (!peso||!altura||!edad||!sexo||!actividad) return null;
+  const edad=calcEdad(fechaNac)||0;
+  if(!peso||!altura||!edad||!sexo||!actividad)return null;
   const bmr=sexo==="masculino"?88.36+13.4*peso+4.8*altura-5.7*edad:447.6+9.2*peso+3.1*altura-4.3*edad;
   return Math.round(bmr*(ACTIVIDAD_FACTOR[actividad]||1.55));
 }
@@ -66,44 +62,43 @@ function getGoalsText(goals=[]) {
 }
 
 function getProgressColor(pct,type,goals=[]) {
-  const hasBajarPeso=goals.includes("bajar_peso");
-  const hasMusculo=goals.includes("musculo");
-  if (type==="protein") { return pct>=60?G.sage:G.gold; }
-  if (type==="calories") {
-    if (hasBajarPeso) { if(pct>100)return G.red;if(pct>=90)return G.gold;if(pct>=60)return G.sage;return G.gold; }
-    if (hasMusculo) { if(pct>100)return G.gold;if(pct>=80)return G.sage;return G.gold; }
+  const hasBajarPeso=goals.includes("bajar_peso"),hasMusculo=goals.includes("musculo");
+  if(type==="protein")return pct>=60?G.sage:G.gold;
+  if(type==="calories"){
+    if(hasBajarPeso){if(pct>100)return G.red;if(pct>=90)return G.gold;if(pct>=60)return G.sage;return G.gold;}
+    if(hasMusculo){if(pct>100)return G.gold;if(pct>=80)return G.sage;return G.gold;}
     if(pct>100)return G.red;if(pct>=70)return G.sage;return G.gold;
   }
   return G.sage;
 }
 
-function useIsDesktop() {
+function useIsDesktop(){
   const [isDesktop,setIsDesktop]=useState(()=>window.innerWidth>=768);
   useEffect(()=>{const h=()=>setIsDesktop(window.innerWidth>=768);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
   return isDesktop;
 }
 
-async function loadAllDays(userId) {
+async function loadAllDays(userId){
   const{data,error}=await supabase.from("registros").select("*").eq("user_id",userId);
   if(error){console.error(error);return{};}
   const map={};
   data.forEach(row=>{if(row.fecha==="perfil")return;map[row.fecha]={meals:row.meals||{},snacks:row.snacks||[],workout:row.workout||null,dayClosed:row.dayClosed||false,dayAnalysis:row.dayAnalysis||null};});
   return map;
 }
-async function loadPerfil(userId) {
+async function loadPerfil(userId){
   const{data,error}=await supabase.from("registros").select("perfil").eq("user_id",userId).eq("fecha","perfil").maybeSingle();
   if(error||!data)return null;return data.perfil;
 }
-async function savePerfil(userId,perfil) {
+async function savePerfil(userId,perfil){
   await supabase.from("registros").upsert({user_id:userId,auth_user_id:userId,fecha:"perfil",perfil},{onConflict:"user_id,fecha"});
 }
-async function saveDay(userId,fecha,dayData) {
+async function saveDay(userId,fecha,dayData){
   await supabase.from("registros").upsert({user_id:userId,auth_user_id:userId,fecha,meals:dayData.meals||{},snacks:dayData.snacks||[],workout:dayData.workout||null},{onConflict:"user_id,fecha"});
 }
 const lsLoad=(k,def)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch{return def;}};
 const lsSave=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
 
-async function callAI(prompt,system) {
+async function callAI(prompt,system){
   const res=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt,system})});
   const data=await res.json();
   const text=data.content?.find(b=>b.type==="text")?.text||"";
@@ -113,8 +108,8 @@ async function callAI(prompt,system) {
 const glassCard={background:G.glass,backdropFilter:blur,WebkitBackdropFilter:blur,border:`1px solid ${G.border}`,borderRadius:18};
 const glassSubtle={background:G.glassDark,backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.borderSubtle}`,borderRadius:12};
 
-function SectionDivider({label}) {
-  return (
+function SectionDivider({label}){
+  return(
     <div style={{display:"flex",alignItems:"center",gap:12,margin:"8px 0 16px"}}>
       <div style={{flex:1,height:1,background:"rgba(255,255,255,0.4)"}}/>
       <span style={{fontSize:12,color:G.hint,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:500}}>{label}</span>
@@ -123,9 +118,9 @@ function SectionDivider({label}) {
   );
 }
 
-function Slider({min,max,step,value,onChange,label}) {
+function Slider({min,max,step,value,onChange,label}){
   const pct=((value-min)/(max-min))*100;
-  return (
+  return(
     <div style={{marginBottom:8}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
         <span style={{fontSize:13,color:G.hint,letterSpacing:"0.04em",textTransform:"uppercase"}}>{label}</span>
@@ -142,13 +137,12 @@ function Slider({min,max,step,value,onChange,label}) {
   );
 }
 
-function AuthScreen() {
+function AuthScreen(){
   const [isLogin,setIsLogin]=useState(true);
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
   const [loading,setLoading]=useState(false);
   const [message,setMessage]=useState("");
-
   const handleSubmit=async()=>{
     if(!email||!password)return;
     setLoading(true);setMessage("");
@@ -156,44 +150,32 @@ function AuthScreen() {
     if(error)setMessage(error.message);else if(!isLogin)setMessage("Revisá tu email para confirmar tu cuenta.");
     setLoading(false);
   };
-
-  const inp={width:"100%",background:"rgba(255,255,255,0.55)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid rgba(255,255,255,0.6)`,borderRadius:12,color:G.text,padding:"13px 18px",fontSize:15,boxSizing:"border-box",outline:"none",fontFamily:"inherit",marginBottom:8};
+  const inp={width:"100%",background:"rgba(255,255,255,0.55)",border:`1px solid rgba(255,255,255,0.6)`,borderRadius:12,color:G.text,padding:"13px 18px",fontSize:15,boxSizing:"border-box",outline:"none",fontFamily:"inherit",marginBottom:8};
   const lbl={display:"block",fontSize:11,color:G.hint,marginBottom:6,letterSpacing:"0.06em",textTransform:"uppercase"};
-
-  return (
+  return(
     <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1},${G.bg2},${G.bg3})`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{width:"100%",maxWidth:420,borderRadius:28,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.12)"}}>
-
         <div style={{background:`linear-gradient(160deg,#3d6b47 0%,#5a7a54 60%,#87a882 100%)`,padding:"32px 28px 0",position:"relative",overflow:"hidden",minHeight:200}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:14,position:"relative",zIndex:2}}>
             <div style={{width:40,height:40,borderRadius:"50%",background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🌿</div>
             <span style={{color:"#fff",fontSize:20,fontWeight:500,letterSpacing:"-0.01em"}}>NutriQuest</span>
           </div>
-          <p style={{color:"rgba(255,255,255,0.85)",fontSize:14,textAlign:"center",lineHeight:1.6,margin:"0",position:"relative",zIndex:2}}>
-            Tu compañero nutricional —<br/>entendé cómo lo que comés afecta tu cuerpo.
-          </p>
+          <p style={{color:"rgba(255,255,255,0.85)",fontSize:14,textAlign:"center",lineHeight:1.6,margin:"0",position:"relative",zIndex:2}}>Tu compañero nutricional —<br/>entendé cómo lo que comés afecta tu cuerpo.</p>
           <svg viewBox="0 0 420 100" xmlns="http://www.w3.org/2000/svg" style={{display:"block",width:"100%",marginTop:8,position:"relative",zIndex:1}}>
             <ellipse cx="100" cy="95" rx="140" ry="50" fill="rgba(255,255,255,0.06)"/>
             <ellipse cx="330" cy="98" rx="130" ry="45" fill="rgba(255,255,255,0.06)"/>
             <line x1="40" y1="100" x2="40" y2="58" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round"/>
             <ellipse cx="40" cy="48" rx="13" ry="18" fill="rgba(255,255,255,0.16)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2"/>
-            <line x1="28" y1="78" x2="15" y2="64" stroke="rgba(255,255,255,0.38)" strokeWidth="1.4" strokeLinecap="round"/>
-            <ellipse cx="11" cy="59" rx="9" ry="13" fill="rgba(255,255,255,0.11)" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
             <line x1="110" y1="100" x2="110" y2="68" stroke="rgba(255,255,255,0.42)" strokeWidth="1.6" strokeLinecap="round"/>
             <ellipse cx="110" cy="59" rx="11" ry="16" fill="rgba(255,255,255,0.13)" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
             <line x1="210" y1="100" x2="210" y2="55" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round"/>
             <ellipse cx="210" cy="44" rx="15" ry="21" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.38)" strokeWidth="1.2"/>
-            <line x1="197" y1="78" x2="182" y2="63" stroke="rgba(255,255,255,0.32)" strokeWidth="1.2" strokeLinecap="round"/>
-            <ellipse cx="177" cy="57" rx="9" ry="12" fill="rgba(255,255,255,0.09)" stroke="rgba(255,255,255,0.22)" strokeWidth="1"/>
             <line x1="310" y1="100" x2="310" y2="65" stroke="rgba(255,255,255,0.42)" strokeWidth="1.6" strokeLinecap="round"/>
             <ellipse cx="310" cy="56" rx="11" ry="16" fill="rgba(255,255,255,0.13)" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
             <line x1="375" y1="100" x2="375" y2="55" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round"/>
             <ellipse cx="375" cy="44" rx="14" ry="19" fill="rgba(255,255,255,0.16)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2"/>
-            <line x1="387" y1="76" x2="400" y2="62" stroke="rgba(255,255,255,0.38)" strokeWidth="1.4" strokeLinecap="round"/>
-            <ellipse cx="404" cy="57" rx="9" ry="13" fill="rgba(255,255,255,0.11)" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
           </svg>
         </div>
-
         <div style={{background:"rgba(255,255,255,0.92)",backdropFilter:blur,WebkitBackdropFilter:blur,padding:"28px 28px 32px"}}>
           <div style={{display:"flex",background:`rgba(138,180,132,0.15)`,borderRadius:99,padding:4,marginBottom:24,border:`1px solid rgba(90,122,84,0.2)`}}>
             {["Iniciar sesión","Registrarse"].map((label,i)=>{
@@ -217,57 +199,90 @@ function AuthScreen() {
   );
 }
 
-function Btn({onClick,loading,children,full,disabled,variant="primary"}) {
+function Btn({onClick,loading,children,full,disabled,variant="primary"}){
   const base={padding:"11px 20px",borderRadius:10,border:"none",fontWeight:600,fontSize:16,width:full?"100%":"auto",fontFamily:"inherit",letterSpacing:"0.02em",transition:"all 0.2s",cursor:loading||disabled?"not-allowed":"pointer",opacity:loading||disabled?0.8:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8};
   const styles=variant==="secondary"?{...base,background:"transparent",color:G.hint,border:`1px solid rgba(180,180,180,0.35)`}:{...base,background:"#5a7a54",color:"#fff"};
   return <button onClick={onClick} disabled={loading||disabled} style={styles}>{loading?(<><span style={{width:15,height:15,border:"2px solid rgba(255,255,255,0.4)",borderTop:"2px solid #fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style></>):children}</button>;
 }
 
-function Tag({color,bg,border,children}) {
+function Tag({color,bg,border,children}){
   return <span style={{fontSize:14,background:bg||G.sageLight,color:color||G.sage,border:`1px solid ${border||G.sageBorder}`,padding:"4px 10px",borderRadius:99,fontWeight:500,letterSpacing:"0.02em"}}>{children}</span>;
 }
 function Divider(){return <div style={{height:"1px",background:"rgba(255,255,255,0.4)",margin:"0 18px"}}/>;}
 
-function Confetti({active}) {
-  if(!active)return null;
-  const pieces=Array.from({length:22},(_,i)=>({id:i,left:Math.random()*100,color:[G.sage,G.sageMid,G.gold,"#c8b89a","#8fad8b"][i%5],delay:Math.random()*0.4,size:5+Math.random()*6}));
-  return <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:9999}}>{pieces.map(p=><div key={p.id} style={{position:"absolute",left:`${p.left}%`,top:"-10px",width:p.size,height:p.size,borderRadius:"50%",background:p.color,animation:`fall 1.6s ${p.delay}s ease-in forwards`}}/>)}<style>{`@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:0;}}`}</style></div>;
-}
-function Toast({toasts}) {
+function Toast({toasts}){
   return <div style={{position:"fixed",bottom:24,right:20,zIndex:9998,display:"flex",flexDirection:"column",gap:8}}>{toasts.map(t=><div key={t.id} style={{background:G.glass,backdropFilter:blur,WebkitBackdropFilter:blur,border:`1px solid ${G.border}`,color:G.text,padding:"14px 18px",borderRadius:14,display:"flex",alignItems:"center",gap:10,borderLeft:`3px solid ${G.sage}`,animation:"slideIn 0.3s ease"}}><span style={{fontSize:22}}>{t.emoji}</span><div><div style={{fontWeight:600,fontSize:15}}>{t.title}</div><div style={{fontSize:13,color:G.muted}}>{t.desc}</div></div></div>)}<style>{`@keyframes slideIn{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}`}</style></div>;
 }
 
-function XPBar({xp,streak}) {
-  const li=LEVELS.reduce((a,l,i)=>xp>=l.xp?i:a,0);
-  const lvl=LEVELS[li],next=LEVELS[li+1];
-  const pct=next?Math.round(((xp-lvl.xp)/(next.xp-lvl.xp))*100):100;
-  return <div style={{...glassCard,padding:"16px 20px",marginBottom:16,display:"flex",alignItems:"center",gap:14}}><span style={{fontSize:26}}>{lvl.emoji}</span><div style={{flex:1}}><div style={{display:"flex",justifyContent:"space-between",fontSize:14,marginBottom:6}}><span style={{fontWeight:600,color:G.sage,letterSpacing:"0.03em"}}>{lvl.name}</span><span style={{color:G.hint,fontSize:13}}>{next?`${xp} / ${next.xp} xp`:"Máximo"}</span></div><div style={{background:"rgba(255,255,255,0.35)",borderRadius:99,height:6,overflow:"hidden"}}><div style={{width:`${pct}%`,background:G.sage,height:"100%",borderRadius:99,transition:"width 0.6s ease",opacity:0.8}}/></div></div>{streak>0&&<div style={{...glassSubtle,display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 12px",minWidth:42,borderRadius:10}}><span style={{fontSize:16}}>🔥</span><span style={{fontSize:12,color:G.gold,fontWeight:600,marginTop:1}}>{streak}d</span></div>}</div>;
+function DailyTip({profile,D}){
+  const [tip,setTip]=useState(null);
+  const [loading,setLoading]=useState(false);
+  const today=todayStr();
+  const cacheKey=`nq_tip_${today}`;
+
+  useEffect(()=>{
+    const cached=lsLoad(cacheKey,null);
+    if(cached){setTip(cached);return;}
+    if(!profile?.goals?.length)return;
+    setLoading(true);
+    const goals=getGoalsText(profile.goals||[]);
+    const restrictions=profile.restrictions?`Restricciones: ${profile.restrictions}.`:"";
+    callAI(
+      `El usuario quiere: ${goals}. ${restrictions} Generá un tip nutricional o de hábito específico, práctico y motivador para hoy. Máx 2 oraciones. SOLO JSON: { emoji (1 emoji relevante), tip (string) }`,
+      "Eres un coach nutricional empático. Responde SOLO con JSON válido."
+    ).then(result=>{
+      lsSave(cacheKey,result);
+      setTip(result);
+      setLoading(false);
+    }).catch(()=>setLoading(false));
+  },[]);
+
+  if(loading)return(
+    <div style={{...glassCard,padding:"16px 20px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+      <span style={{fontSize:22}}>🌿</span>
+      <p style={{margin:0,fontSize:D.sm,color:G.hint,fontStyle:"italic"}}>Preparando tu tip del día…</p>
+    </div>
+  );
+  if(!tip)return null;
+  return(
+    <div style={{...glassCard,padding:"16px 20px",marginBottom:16,display:"flex",alignItems:"flex-start",gap:12}}>
+      <span style={{fontSize:24,flexShrink:0}}>{tip.emoji||"💡"}</span>
+      <div>
+        <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.05em",textTransform:"uppercase"}}>Tip del día</p>
+        <p style={{margin:0,fontSize:D.sm,color:G.muted,lineHeight:1.6}}>{tip.tip}</p>
+      </div>
+    </div>
+  );
 }
 
-function MealDetails({meal,D}) {
+function MealDetails({meal,D}){
   const alignC={excelente:G.sage,bueno:G.sageMid,moderado:G.gold,perjudicial:G.red};
-  return (
+  return(
     <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(255,255,255,0.4)"}}>
-      {meal.goal_alignment&&<div style={{marginBottom:8,fontSize:D.md}}><span style={{color:G.hint,fontSize:D.sm}}>Alineación con objetivo — </span><span style={{color:alignC[meal.goal_alignment]||G.muted,fontWeight:600}}>{meal.goal_alignment}</span></div>}
+      {meal.goal_alignment&&<div style={{marginBottom:8,fontSize:D.md}}><span style={{color:G.hint,fontSize:D.sm}}>Alineación — </span><span style={{color:alignC[meal.goal_alignment]||G.muted,fontWeight:600}}>{meal.goal_alignment}</span></div>}
       {(meal.nutrients||[]).map((n,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:6}}><span style={{color:n.negative?G.red:G.sage,fontWeight:600,minWidth:100,fontSize:D.sm}}>{n.name}</span><span style={{color:G.muted,fontSize:D.sm,lineHeight:1.5}}>{n.benefit}</span></div>)}
       {meal.tip&&<div style={{marginTop:10,background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:8,padding:"10px 14px",color:G.sage,fontSize:D.sm,fontStyle:"italic"}}>💡 {meal.tip}</div>}
     </div>
   );
 }
 
-function EditMealModal({meal,onSave,onDelete,onClose}) {
+function EditMealModal({meal,onSave,onDelete,onClose}){
   const [desc,setDesc]=useState(meal.desc||"");
   const [date,setDate]=useState(todayStr());
   const dateLabel=new Date(date+"T12:00:00").toLocaleDateString("es",{day:"numeric",month:"short",year:"numeric",timeZone:"America/Argentina/Buenos_Aires"});
-  return (
+  const edits=meal.editCount||0;
+  const maxEdits=2;
+  return(
     <div style={{position:"fixed",inset:0,background:"rgba(40,60,40,0.25)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{background:"rgba(255,255,255,0.88)",border:"1px solid rgba(255,255,255,0.75)",borderRadius:18,padding:24,width:"100%",maxWidth:420}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
           <p style={{margin:0,fontSize:18,fontWeight:500,color:"#2e4a2b"}}>Editar comida</p>
-          <div style={{position:"relative",display:"inline-flex",alignItems:"center",gap:5}}>
-            <span style={{fontSize:14,color:"#93a48f"}}>{dateLabel}</span>
-            <span style={{fontSize:15,color:"#93a48f"}}>✏️</span>
-            <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{position:"absolute",inset:0,opacity:0,cursor:"pointer",width:"100%",height:"100%",border:"none",background:"none",fontSize:0}}/>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:12,color:G.hint}}>{edits}/{maxEdits} ediciones</span>
+            <div style={{position:"relative",display:"inline-flex",alignItems:"center",gap:5}}>
+              <span style={{fontSize:14,color:"#93a48f"}}>{dateLabel}</span>
+              <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{position:"absolute",inset:0,opacity:0,cursor:"pointer",width:"100%",height:"100%",border:"none",background:"none",fontSize:0}}/>
+            </div>
           </div>
         </div>
         <label style={{display:"block",fontSize:13,color:"#93a48f",textTransform:"uppercase",letterSpacing:"0.04em",marginBottom:6}}>Descripción</label>
@@ -282,7 +297,7 @@ function EditMealModal({meal,onSave,onDelete,onClose}) {
   );
 }
 
-function MealCard({meal,onDelete,onSave,D}) {
+function MealCard({meal,onDelete,onSave,D}){
   const [exp,setExp]=useState(false);
   const [editing,setEditing]=useState(false);
   const skinC={beneficioso:G.sage,neutro:G.muted,inflamatorio:G.red};
@@ -294,7 +309,9 @@ function MealCard({meal,onDelete,onSave,D}) {
   const scoreColor=meal.score>=8?G.sage:meal.score>=6?G.gold:G.red;
   const scoreBg=meal.score>=8?G.sageLight:meal.score>=6?G.goldLight:G.redLight;
   const scoreBd=meal.score>=8?G.sageBorder:meal.score>=6?"rgba(180,148,72,0.25)":"rgba(180,80,80,0.25)";
-  return (
+  const edits=meal.editCount||0;
+  const canEdit=edits<2;
+  return(
     <div>
       {editing&&<EditMealModal meal={meal} onSave={(desc,date)=>{onSave(desc,date);setEditing(false);}} onDelete={()=>{onDelete();setEditing(false);}} onClose={()=>setEditing(false)}/>}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
@@ -307,16 +324,20 @@ function MealCard({meal,onDelete,onSave,D}) {
             {meal.goal_alignment&&<Tag bg={alignBg[meal.goal_alignment]} color={alignC[meal.goal_alignment]} border={alignBd[meal.goal_alignment]}>🎯 {meal.goal_alignment}</Tag>}
           </div>
         </div>
-        <button onClick={()=>setEditing(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 9px",cursor:"pointer",fontSize:14,color:G.hint,marginLeft:12,flexShrink:0,fontFamily:"inherit"}}>✏️</button>
+        {canEdit?(
+          <button onClick={()=>setEditing(true)} style={{background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:8,padding:"5px 9px",cursor:"pointer",fontSize:14,color:G.hint,marginLeft:12,flexShrink:0,fontFamily:"inherit"}}>✏️</button>
+        ):(
+          <span style={{marginLeft:12,fontSize:12,color:G.hint,flexShrink:0,padding:"5px 0"}}>sin ediciones</span>
+        )}
       </div>
       {exp&&<MealDetails meal={meal} D={D}/>}
     </div>
   );
 }
 
-function MealSlot({slot,meal,input,onInput,loading,onSubmit,onDelete,onSave,D}) {
+function MealSlot({slot,meal,input,onInput,loading,onSubmit,onDelete,onSave,D}){
   const inp={width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"11px 14px",fontSize:D.md,boxSizing:"border-box",outline:"none",fontFamily:"inherit"};
-  return (
+  return(
     <div style={{padding:"18px 20px"}}>
       <div style={{fontWeight:500,fontSize:D.md,color:G.text,marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
         <span style={{fontSize:D.lg}}>{slot.emoji}</span>
@@ -327,8 +348,8 @@ function MealSlot({slot,meal,input,onInput,loading,onSubmit,onDelete,onSave,D}) 
   );
 }
 
-function WorkoutCard({workout,D}) {
-  return (
+function WorkoutCard({workout,D}){
+  return(
     <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
       <Tag>{workout.type}</Tag>
       <Tag>{workout.duration} min</Tag>
@@ -337,7 +358,7 @@ function WorkoutCard({workout,D}) {
   );
 }
 
-function WeekRanking({days,D}) {
+function WeekRanking({days,D}){
   const weeks={};
   Object.entries(days).forEach(([date,day])=>{
     const d=new Date(date+"T12:00:00");const mon=new Date(d);mon.setDate(d.getDate()-d.getDay()+1);
@@ -349,38 +370,28 @@ function WeekRanking({days,D}) {
   return <div style={{...glassSubtle,padding:18,marginTop:10,borderRadius:14}}><p style={{margin:"0 0 12px",fontSize:D.md,fontWeight:600,color:G.text}}>Mejores semanas</p>{ranked.slice(0,5).map((r,i)=><div key={r.wk} style={{display:"flex",justifyContent:"space-between",fontSize:D.sm,padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.3)"}}><span style={{color:G.muted}}>{["🥇","🥈","🥉","4","5"][i]} {r.wk}</span><span style={{color:G.sage,fontWeight:600}}>⭐ {r.score} · {r.days}d</span></div>)}</div>;
 }
 
-function ProfilePanel({profile,onUpdate,userId,D}) {
+function ProfilePanel({profile,onUpdate,userId,D}){
   const [editing,setEditing]=useState(false);
   const [goalsOpen,setGoalsOpen]=useState(false);
   const [form,setForm]=useState({name:profile.name,weight:profile.weight,height:profile.height,fechaNac:profile.fechaNac||""});
   const [selectedGoals,setSelectedGoals]=useState(profile.goals||[]);
-
   const edad=calcEdad(profile.fechaNac)||profile.age;
   const bmi=(profile.weight/((profile.height/100)**2)).toFixed(1);
-
   const inp={width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"11px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
   const lbl={display:"block",fontSize:D.sm,color:G.hint,marginBottom:5,marginTop:12,letterSpacing:"0.04em",textTransform:"uppercase"};
-
   const previewEdad=calcEdad(form.fechaNac)||profile.age;
   const previewTDEE=calcTDEE(+form.weight||profile.weight,+profile.height,form.fechaNac||profile.fechaNac,profile.sex,profile.activity);
   const previewProt=Math.round((+form.weight||profile.weight)*2);
-
   const toggleGoal=(id)=>setSelectedGoals(prev=>prev.includes(id)?prev.filter(x=>x!==id):prev.length>=3?prev:[...prev,id]);
-
   const handleSave=async()=>{
     if(!form.name||!+form.weight||!+form.height)return;
     const tdee=calcTDEE(+form.weight,+profile.height,form.fechaNac||profile.fechaNac,profile.sex,profile.activity);
     const updated={...profile,name:form.name,weight:+form.weight,fechaNac:form.fechaNac||profile.fechaNac,age:previewEdad,tdee,goals:selectedGoals};
     await savePerfil(userId,updated);onUpdate(updated);setEditing(false);setGoalsOpen(false);
   };
+  const handleCancel=()=>{setEditing(false);setGoalsOpen(false);setForm({name:profile.name,weight:profile.weight,height:profile.height,fechaNac:profile.fechaNac||""});setSelectedGoals(profile.goals||[]);};
 
-  const handleCancel=()=>{
-    setEditing(false);setGoalsOpen(false);
-    setForm({name:profile.name,weight:profile.weight,height:profile.height,fechaNac:profile.fechaNac||""});
-    setSelectedGoals(profile.goals||[]);
-  };
-
-  if(editing) return (
+  if(editing)return(
     <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
       <p style={{margin:"0 0 14px",fontSize:D.lg,fontWeight:600,color:G.text}}>Editar perfil</p>
       <label style={lbl}>Nombre</label>
@@ -389,10 +400,6 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
         <div><label style={lbl}>Peso (kg)</label><input type="number" value={form.weight} onChange={e=>setForm(f=>({...f,weight:e.target.value}))} style={inp}/></div>
         <div><label style={lbl}>Altura (cm)</label><input type="number" value={profile.height} disabled style={{...inp,opacity:0.6}}/></div>
       </div>
-      <label style={lbl}>Fecha de nacimiento</label>
-      <input type="date" value={form.fechaNac} onChange={e=>setForm(f=>({...f,fechaNac:e.target.value}))} style={inp}/>
-      {previewEdad&&<p style={{margin:"-4px 0 8px",fontSize:12,color:G.hint}}>{previewEdad} años</p>}
-
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:4,marginBottom:8}}>
         <div style={{background:G.sageLight,borderRadius:10,padding:"10px 14px"}}>
           <p style={{margin:"0 0 2px",fontSize:11,color:G.hint,letterSpacing:"0.04em"}}>META DE PROTEÍNA</p>
@@ -403,12 +410,9 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
           <p style={{margin:0,fontSize:D.lg,fontWeight:600,color:G.sage}}>{previewTDEE.toLocaleString()}<span style={{fontSize:12,fontWeight:400,color:G.hint}}> kcal</span></p>
         </div>}
       </div>
-
-      {/* Objetivos como acordeón dentro del flujo de edición */}
       <div style={{border:`1px solid ${G.borderSubtle}`,borderRadius:12,overflow:"hidden",marginBottom:16}}>
         <button onClick={()=>setGoalsOpen(o=>!o)} style={{width:"100%",padding:"12px 16px",background:"rgba(255,255,255,0.3)",border:"none",cursor:"pointer",fontFamily:"inherit",display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:D.sm,color:G.muted,fontWeight:500}}>
-          <span>Objetivos</span>
-          <span style={{fontSize:11,color:G.hint}}>{goalsOpen?"▲":"▼"}</span>
+          <span>Objetivos</span><span style={{fontSize:11,color:G.hint}}>{goalsOpen?"▲":"▼"}</span>
         </button>
         {goalsOpen&&(
           <div style={{padding:"12px 16px",borderTop:`1px solid ${G.borderSubtle}`}}>
@@ -417,7 +421,7 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
               {Object.entries(GOAL_LABELS).map(([id,label])=>{
                 const selected=selectedGoals.includes(id);
                 const disabled=!selected&&selectedGoals.length>=3;
-                return (
+                return(
                   <div key={id} onClick={disabled?undefined:()=>toggleGoal(id)} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,cursor:disabled?"not-allowed":"pointer",background:selected?"rgba(90,122,84,0.12)":"rgba(255,255,255,0.35)",border:`1.5px solid ${selected?G.sage:"rgba(255,255,255,0.5)"}`,opacity:disabled?0.5:1,transition:"all 0.2s"}}>
                     <span style={{flex:1,fontSize:D.sm,color:selected?G.sage:G.muted,fontWeight:selected?600:400}}>{label}</span>
                     <div style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${selected?G.sage:"rgba(180,180,180,0.4)"}`,background:selected?G.sage:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -430,7 +434,6 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
           </div>
         )}
       </div>
-
       <div style={{display:"flex",gap:8}}>
         <Btn onClick={handleCancel} variant="secondary">Cancelar</Btn>
         <div style={{flex:1}}><Btn onClick={handleSave} full>Guardar</Btn></div>
@@ -438,7 +441,7 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
     </div>
   );
 
-  return (
+  return(
     <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
         <div style={{display:"flex",gap:12,alignItems:"center"}}>
@@ -459,29 +462,26 @@ function ProfilePanel({profile,onUpdate,userId,D}) {
   );
 }
 
-function DayCloseModal({todayData,profile,onClose,onSave,D}) {
+function DayCloseModal({todayData,profile,onClose,onSave,D}){
   const [loading,setLoading]=useState(false);
   const [analysis,setAnalysis]=useState(null);
   const allMeals=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])];
   const avgScore=allMeals.length?(allMeals.reduce((a,m)=>a+(m.score||0),0)/allMeals.length).toFixed(1):"—";
   const totProt=Math.round(allMeals.reduce((a,m)=>a+(m.protein_g||0),0));
   const userGoals=getGoalsText(profile?.goals||[]);
-
   const handleAnalyze=async()=>{
     setLoading(true);
     const mealsDesc=allMeals.map(m=>m.desc).join("; ");
     const restrictions=profile?.restrictions?`Restricciones: ${profile.restrictions}.`:"";
-    try {
-      const result=await callAI(`Analizá el día completo. Comidas: "${mealsDesc}". Score promedio: ${avgScore}. Proteína: ${totProt}g de ${Math.round((profile?.weight||70)*2)}g. Objetivos: ${userGoals}. ${restrictions} Sé honesto y constructivo. SOLO JSON: { resumen, logros ([string] máx 2), areas_mejora ([string] máx 2), consejo_manana, puntuacion_dia (1-10) }`,"Eres un nutricionista honesto. Responde SOLO con JSON válido.");
+    try{
+      const result=await callAI(`Analizá el día. Comidas: "${mealsDesc}". Score: ${avgScore}. Proteína: ${totProt}g de ${Math.round((profile?.weight||70)*2)}g. Objetivos: ${userGoals}. ${restrictions} SOLO JSON: { resumen, logros ([string] máx 2), areas_mejora ([string] máx 2), consejo_manana, puntuacion_dia (1-10) }`,"Eres un nutricionista honesto. Responde SOLO con JSON válido.");
       setAnalysis(result);
       await onSave({...todayData,dayClosed:true,dayAnalysis:result});
-    } catch{alert("Error al analizar el día.");}
+    }catch{alert("Error al analizar el día.");}
     setLoading(false);
   };
-
   const scoreColor=analysis?.puntuacion_dia>=8?G.sage:analysis?.puntuacion_dia>=6?G.gold:G.red;
-
-  return (
+  return(
     <div style={{position:"fixed",inset:0,background:"rgba(40,60,40,0.3)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{...glassCard,padding:28,width:"100%",maxWidth:440,maxHeight:"90vh",overflowY:"auto"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
@@ -513,7 +513,7 @@ function DayCloseModal({todayData,profile,onClose,onSave,D}) {
   );
 }
 
-function PlanTab({todayData,profile,plan,setPlan,D}) {
+function PlanTab({todayData,profile,plan,setPlan,D}){
   const [loading,setLoading]=useState(false);
   const missingSlots=FIXED_SLOTS.filter(s=>!todayData.meals?.[s.id]);
   const consumedCal=[...Object.values(todayData.meals||{}),...(todayData.snacks||[])].reduce((a,m)=>a+(m.calories||m.protein_g*4||0),0);
@@ -522,26 +522,24 @@ function PlanTab({todayData,profile,plan,setPlan,D}) {
   const remainingProt=profile?.weight?(Math.round(profile.weight*2)-consumedProt):null;
   const isExceeded=remainingCal!==null&&remainingCal<0;
   const userGoals=getGoalsText(profile?.goals||[]);
-
   const handleGenerate=async()=>{
     setLoading(true);
     const pendingSlots=missingSlots.map(s=>s.label).join(", ")||"ninguno";
     const alreadyEaten=Object.values(todayData.meals||{}).map(m=>m.desc).concat((todayData.snacks||[]).map(s=>s.desc)).join("; ")||"nada todavía";
     const restrictions=profile?.restrictions?`Restricciones: ${profile.restrictions}.`:"";
     const prompt=isExceeded
-      ?`Excedió calorías (${Math.round(consumedCal)} de ${profile.tdee}). Ya comió: ${alreadyEaten}. Objetivos: ${userGoals}. ${restrictions} Faltan: ${pendingSlots}. Sugiere opciones livianas. Tono empático. SOLO JSON: { slots: [{slot, sugerencia, motivo}], mensaje_motivacional }`
-      :`Lleva ${Math.round(consumedCal)} kcal y ${Math.round(consumedProt)}g proteína. Quedan ${Math.round(remainingCal||0)} kcal y ${Math.round(remainingProt||0)}g proteína. Ya comió: ${alreadyEaten}. Objetivos: ${userGoals}. ${restrictions} Faltan: ${pendingSlots}. SOLO JSON: { slots: [{slot, sugerencia, motivo}], mensaje_motivacional }`;
-    try { const result=await callAI(prompt,"Eres un nutricionista empático. Responde SOLO con JSON válido.");setPlan(result); }
+      ?`Excedió calorías. Ya comió: ${alreadyEaten}. Objetivos: ${userGoals}. ${restrictions} Faltan: ${pendingSlots}. Opciones livianas. SOLO JSON: { slots: [{slot, sugerencia, motivo}], mensaje_motivacional }`
+      :`Lleva ${Math.round(consumedCal)} kcal y ${Math.round(consumedProt)}g proteína. Quedan ${Math.round(remainingCal||0)} kcal y ${Math.round(remainingProt||0)}g. Ya comió: ${alreadyEaten}. Objetivos: ${userGoals}. ${restrictions} Faltan: ${pendingSlots}. SOLO JSON: { slots: [{slot, sugerencia, motivo}], mensaje_motivacional }`;
+    try{const result=await callAI(prompt,"Eres un nutricionista empático. Responde SOLO con JSON válido.");setPlan(result);}
     catch{alert("Error al generar el plan.");}
     setLoading(false);
   };
-
-  return (
+  return(
     <div>
       <div style={{...glassCard,padding:"18px 20px",marginBottom:16}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
           <p style={{margin:0,fontSize:D.md,fontWeight:500,color:G.text}}>Plan de hoy</p>
-          {missingSlots.length===0?<span style={{fontSize:13,color:G.sage,fontWeight:500}}>✓ Día completo</span>:<span style={{fontSize:13,color:G.hint}}>{missingSlots.length} comida{missingSlots.length!==1?"s":""} pendiente{missingSlots.length!==1?"s":""}</span>}
+          {missingSlots.length===0?<span style={{fontSize:13,color:G.sage,fontWeight:500}}>✓ Día completo</span>:<span style={{fontSize:13,color:G.hint}}>{missingSlots.length} pendiente{missingSlots.length!==1?"s":""}</span>}
         </div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
           {FIXED_SLOTS.map(s=>{const done=!!todayData.meals?.[s.id];return <div key={s.id} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,background:done?"rgba(90,122,84,0.12)":"rgba(255,255,255,0.3)",border:`1px solid ${done?G.sage:G.borderSubtle}`}}><span style={{fontSize:14}}>{s.emoji}</span><span style={{fontSize:13,color:done?G.sage:G.hint,fontWeight:done?500:400}}>{s.label}</span>{done&&<span style={{fontSize:11,color:G.sage}}>✓</span>}</div>;})}
@@ -557,7 +555,7 @@ function PlanTab({todayData,profile,plan,setPlan,D}) {
   );
 }
 
-function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRanking,setShowRanking,badges,workoutGoal,setWorkoutGoal,D}) {
+function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showRanking,setShowRanking,badges,workoutGoal,setWorkoutGoal,D}){
   const [section,setSection]=useState("metricas");
   const [period,setPeriod]=useState("week");
   const [histDate,setHistDate]=useState(todayStr());
@@ -595,12 +593,11 @@ function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showR
   const PeriodBtn=({id,label})=><button onClick={()=>setPeriod(id)} style={{padding:"7px 16px",borderRadius:99,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:D.sm,fontWeight:period===id?600:400,background:period===id?"rgba(90,122,84,0.2)":"transparent",color:period===id?G.sage:G.hint}}>{label}</button>;
   const SectionBtn=({id,label})=><button onClick={()=>setSection(id)} style={{flex:1,padding:"6px 4px",background:"transparent",border:"none",borderBottom:`2px solid ${section===id?G.sage:"transparent"}`,cursor:"pointer",fontFamily:"inherit",fontSize:D.sm,fontWeight:section===id?500:400,color:section===id?G.sage:G.hint,transition:"all 0.2s",letterSpacing:"0.02em"}}>{label}</button>;
 
-  return (
+  return(
     <div>
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid rgba(255,255,255,0.3)`}}>
         <SectionBtn id="metricas" label="Métricas"/><SectionBtn id="historial" label="Historial"/><SectionBtn id="badges" label="Badges"/>
       </div>
-
       {section==="metricas"&&<div>
         <div style={{...glassSubtle,display:"flex",justifyContent:"center",gap:4,padding:"4px",borderRadius:99,marginBottom:16}}>
           <PeriodBtn id="week" label="Semana"/><PeriodBtn id="month" label="Mes"/><PeriodBtn id="year" label="Año"/>
@@ -618,18 +615,16 @@ function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showR
         <div style={{...glassCard,padding:20,marginBottom:12}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
             <p style={{margin:0,fontSize:D.md,fontWeight:500,color:G.text}}>Volumen de entrenamiento</p>
-            <div>
-              {editingWorkoutGoal?(
-                <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <button onClick={()=>setTempGoal(t=>Math.max(1,t-1))} style={{width:24,height:24,borderRadius:"50%",border:`1px solid ${G.borderSubtle}`,background:"transparent",cursor:"pointer",fontSize:14,color:G.hint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit"}}>−</button>
-                  <span style={{fontSize:D.sm,fontWeight:600,color:G.sage,minWidth:20,textAlign:"center"}}>{tempGoal}</span>
-                  <button onClick={()=>setTempGoal(t=>Math.min(7,t+1))} style={{width:24,height:24,borderRadius:"50%",border:`1px solid ${G.borderSubtle}`,background:"transparent",cursor:"pointer",fontSize:14,color:G.hint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit"}}>+</button>
-                  <button onClick={()=>{setWorkoutGoal(tempGoal);setEditingWorkoutGoal(false);lsSave("nq_workout_goal",tempGoal);}} style={{padding:"3px 8px",borderRadius:6,border:"none",background:G.sage,color:"#fff",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>ok</button>
-                </div>
-              ):(
-                <button onClick={()=>{setTempGoal(workoutGoal);setEditingWorkoutGoal(true);}} style={{fontSize:D.sm,color:G.hint,background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:6,padding:"3px 8px",cursor:"pointer",fontFamily:"inherit"}}>{workoutGoal}x/sem</button>
-              )}
-            </div>
+            <div>{editingWorkoutGoal?(
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <button onClick={()=>setTempGoal(t=>Math.max(1,t-1))} style={{width:24,height:24,borderRadius:"50%",border:`1px solid ${G.borderSubtle}`,background:"transparent",cursor:"pointer",fontSize:14,color:G.hint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit"}}>−</button>
+                <span style={{fontSize:D.sm,fontWeight:600,color:G.sage,minWidth:20,textAlign:"center"}}>{tempGoal}</span>
+                <button onClick={()=>setTempGoal(t=>Math.min(7,t+1))} style={{width:24,height:24,borderRadius:"50%",border:`1px solid ${G.borderSubtle}`,background:"transparent",cursor:"pointer",fontSize:14,color:G.hint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit"}}>+</button>
+                <button onClick={()=>{setWorkoutGoal(tempGoal);setEditingWorkoutGoal(false);lsSave("nq_workout_goal",tempGoal);}} style={{padding:"3px 8px",borderRadius:6,border:"none",background:G.sage,color:"#fff",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>ok</button>
+              </div>
+            ):(
+              <button onClick={()=>{setTempGoal(workoutGoal);setEditingWorkoutGoal(true);}} style={{fontSize:D.sm,color:G.hint,background:"none",border:`1px solid ${G.borderSubtle}`,borderRadius:6,padding:"3px 8px",cursor:"pointer",fontFamily:"inherit"}}>{workoutGoal}x/sem</button>
+            )}</div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:16}}>
             <div style={{position:"relative",width:72,height:72,flexShrink:0}}>
@@ -649,10 +644,6 @@ function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showR
           </div>
         </div>
         <div style={{...glassCard,padding:20,marginBottom:12}}>
-          <p style={{margin:"0 0 12px",fontSize:D.md,fontWeight:500,color:G.text}}>Coherencia nutrición-entreno</p>
-          {avgCoherence?<div style={{display:"flex",alignItems:"center",gap:16}}><div style={{textAlign:"center"}}><p style={{margin:0,fontSize:38,fontWeight:300,color:G.sage,lineHeight:1}}>{avgCoherence}</p><p style={{margin:"4px 0 0",fontSize:D.sm,color:G.hint}}>promedio</p></div><div style={{flex:1}}><div style={{background:"rgba(255,255,255,0.3)",borderRadius:99,height:6,overflow:"hidden",marginBottom:8}}><div style={{width:`${(avgCoherence/10)*100}%`,background:G.sage,height:"100%",borderRadius:99,opacity:0.8}}/></div><p style={{margin:0,fontSize:D.sm,color:G.hint}}>{avgCoherence>=8?"Excelente sincronía":avgCoherence>=6?"Buena coherencia":"Revisá la relación entre tus comidas y entrenamientos"}</p></div></div>:<p style={{margin:0,fontSize:D.md,color:G.hint,fontStyle:"italic"}}>Registrá entrenamientos para ver este índice.</p>}
-        </div>
-        <div style={{...glassCard,padding:20,marginBottom:12}}>
           <p style={{margin:"0 0 12px",fontSize:D.md,fontWeight:500,color:G.text}}>Racha de consistencia</p>
           <div style={{display:"flex",gap:24,marginBottom:16}}>
             <div style={{textAlign:"center"}}><p style={{margin:0,fontSize:38,fontWeight:300,color:G.sage,lineHeight:1}}>{currentStreak}</p><p style={{margin:"4px 0 0",fontSize:D.sm,color:G.hint}}>racha actual</p></div>
@@ -667,7 +658,6 @@ function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showR
         <button onClick={()=>setShowRanking(r=>!r)} style={{width:"100%",marginTop:12,padding:"10px",borderRadius:10,border:`1px solid ${G.borderSubtle}`,background:"rgba(255,255,255,0.2)",color:G.hint,cursor:"pointer",fontSize:16,fontFamily:"inherit",backdropFilter:blurSm,WebkitBackdropFilter:blurSm}}>{showRanking?"Ocultar":"Ver"} ranking personal</button>
         {showRanking&&<WeekRanking days={days} D={D}/>}
       </div>}
-
       {section==="historial"&&<div>
         <input type="date" value={histDate} onChange={e=>setHistDate(e.target.value)} style={{...inp,marginBottom:16}}/>
         {(()=>{
@@ -685,15 +675,14 @@ function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showR
                 <Tag>💪 {totProt}g</Tag>
                 {hDay.workout&&<Tag>🏋️ {hDay.workout.type}</Tag>}
               </div>
-              {hDay.dayAnalysis&&<div style={{marginTop:12,background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:8,padding:"10px 14px",fontSize:D.sm,color:G.sage}}><strong>Análisis del día:</strong> {hDay.dayAnalysis.resumen}</div>}
+              {hDay.dayAnalysis&&<div style={{marginTop:12,background:G.sageLight,border:`1px solid ${G.sageBorder}`,borderRadius:8,padding:"10px 14px",fontSize:D.sm,color:G.sage}}><strong>Análisis:</strong> {hDay.dayAnalysis.resumen}</div>}
             </div>
             {FIXED_SLOTS.map(slot=>{const m=hDay.meals?.[slot.id];if(!m)return null;const key=`${histDate}-${slot.id}`;const isExp=expandedMeal===key;return <div key={key} style={{...glassCard,padding:"16px 20px",marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",cursor:"pointer",marginBottom:8}} onClick={()=>setExpandedMeal(isExp?null:key)}><span style={{fontWeight:500,fontSize:D.md}}>{slot.emoji} {slot.label}</span><span style={{fontSize:D.sm,color:G.hint}}>{isExp?"▲":"▼"}</span></div><p style={{margin:0,fontSize:D.sm,color:G.muted}}>{m.desc}</p>{isExp&&<MealDetails meal={m} D={D}/>}</div>;})}
             {(hDay.snacks||[]).map((s,i)=>{const key=`${histDate}-snack-${i}`;const isExp=expandedMeal===key;return <div key={key} style={{...glassCard,padding:"16px 20px",marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",cursor:"pointer",marginBottom:8}} onClick={()=>setExpandedMeal(isExp?null:key)}><span style={{fontWeight:500,fontSize:D.md}}>🥜 {s.name}</span><span style={{fontSize:D.sm,color:G.hint}}>{isExp?"▲":"▼"}</span></div><p style={{margin:0,fontSize:D.sm,color:G.muted}}>{s.desc}</p>{isExp&&<MealDetails meal={s} D={D}/>}</div>;})}
-            {hDay.workout&&<div style={{...glassCard,padding:"16px 20px"}}><p style={{margin:"0 0 12px",fontWeight:500,fontSize:D.md}}>🏋️ {hDay.workout.type}</p><WorkoutCard workout={hDay.workout} compact D={D}/></div>}
+            {hDay.workout&&<div style={{...glassCard,padding:"16px 20px"}}><p style={{margin:"0 0 12px",fontWeight:500,fontSize:D.md}}>🏋️ Entrenamiento</p><WorkoutCard workout={hDay.workout} D={D}/></div>}
           </div>;
         })()}
       </div>}
-
       {section==="badges"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
         {BADGES_DEF.map(b=>{const unlocked=badges.includes(b.id);return <div key={b.id} style={{...unlocked?glassCard:glassSubtle,padding:18,textAlign:"center",opacity:unlocked?1:0.5}}><div style={{fontSize:32,marginBottom:10,filter:unlocked?"none":"grayscale(1) opacity(0.4)"}}>{b.emoji}</div><p style={{margin:"0 0 4px",fontWeight:500,fontSize:15,color:G.text}}>{b.name}</p><p style={{margin:0,fontSize:14,color:G.hint,lineHeight:1.5}}>{b.desc}</p>{unlocked&&<p style={{margin:"10px 0 0",fontSize:13,color:G.sage,fontWeight:600,letterSpacing:"0.04em"}}>✓ DESBLOQUEADO</p>}</div>;})}
       </div>}
@@ -701,7 +690,7 @@ function ProgressTab({days,fetchWeekSummary,weekSummaryLoading,weekSummary,showR
   );
 }
 
-export default function App() {
+export default function App(){
   const isDesktop=useIsDesktop();
   const D={xs:isDesktop?"16px":"12px",sm:isDesktop?"19px":"13px",md:isDesktop?"22px":"15px",lg:isDesktop?"26px":"18px",xl:isDesktop?"34px":"22px"};
   const inp={width:"100%",background:"rgba(255,255,255,0.5)",backdropFilter:blurSm,WebkitBackdropFilter:blurSm,border:`1px solid ${G.border}`,borderRadius:10,color:G.text,padding:"12px 14px",fontSize:D.md,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"inherit"};
@@ -720,11 +709,9 @@ export default function App() {
   const [profile,setProfile]=useState(null);
   const [days,setDays]=useState({});
   const [loading,setLoading]=useState(true);
-  const [xp,setXp]=useState(()=>lsLoad("nq_xp",0));
   const [badges,setBadges]=useState(()=>lsLoad("nq_badges",[]));
   const [streak,setStreak]=useState(()=>lsLoad("nq_streak",0));
   const [workoutGoal,setWorkoutGoal]=useState(()=>lsLoad("nq_workout_goal",3));
-  const [confetti,setConfetti]=useState(false);
   const [toasts,setToasts]=useState([]);
   const [weekSummary,setWeekSummary]=useState(null);
   const [weekSummaryLoading,setWeekSummaryLoading]=useState(false);
@@ -732,7 +719,7 @@ export default function App() {
   const [mealInputs,setMealInputs]=useState({});
   const [mealLoading,setMealLoading]=useState({});
   const [snackName,setSnackName]=useState("");
-  const [workoutForm,setWorkoutForm]=useState({type:"Fuerza/hipertrofia",duration:45,intensity:3,notes:""});
+  const [workoutForm,setWorkoutForm]=useState({type:"Fuerza/hipertrofia",duration:45,intensity:3});
   const [workoutLoading,setWorkoutLoading]=useState(false);
   const [showDayClose,setShowDayClose]=useState(false);
   const [dayPlan,setDayPlan]=useState(null);
@@ -742,10 +729,9 @@ export default function App() {
 
   useEffect(()=>{
     if(sessionLoading)return;
-    (async()=>{setLoading(true);const[p,d]=await Promise.all([loadPerfil(USER_ID),loadAllDays(USER_ID)]);console.log("PERFIL:",p,"USER_ID:",USER_ID);setProfile(p);setDays(d);setLoading(false);})();
+    (async()=>{setLoading(true);const[p,d]=await Promise.all([loadPerfil(USER_ID),loadAllDays(USER_ID)]);setProfile(p);setDays(d);setLoading(false);})();
   },[USER_ID,sessionLoading]);
 
-  useEffect(()=>{lsSave("nq_xp",xp);},[xp]);
   useEffect(()=>{lsSave("nq_badges",badges);},[badges]);
   useEffect(()=>{lsSave("nq_streak",streak);},[streak]);
 
@@ -765,26 +751,27 @@ export default function App() {
   const handleDeleteSnack=async(index)=>{await updateToday({snacks:(todayData.snacks||[]).filter((_,i)=>i!==index)});};
 
   const handleEditMeal=async(slotId,newDesc,targetDate)=>{
+    const oldMeal=todayData.meals[slotId];
+    const editCount=(oldMeal.editCount||0)+1;
     setMealLoading(l=>({...l,[slotId]:true}));
     const userGoals=getGoalsText(profile?.goals||[]);
     const restrictions=profile?.restrictions?`Restricciones: ${profile.restrictions}.`:"";
     let result={};
-    try {
+    try{
       result=await callAI(`Analiza esta comida: "${newDesc}". El usuario quiere: ${userGoals}. ${restrictions} Sé honesto. SOLO JSON: score (1-10), protein_g, skin_impact ("beneficioso"|"neutro"|"inflamatorio"), goal_alignment ("excelente"|"bueno"|"moderado"|"perjudicial"), nutrients ([{name,benefit,negative:bool}] máx 4), tip.`,"Eres un nutricionista honesto. Responde SOLO con JSON válido.");
-    } catch{console.error("Error al re-analizar");}
+    }catch{console.error("Error al re-analizar");}
     setMealLoading(l=>({...l,[slotId]:false}));
-    const meal={...todayData.meals[slotId],desc:newDesc,...result};
+    const meal={...oldMeal,desc:newDesc,...result,editCount};
     if(targetDate&&targetDate!==today){
       const toDay=days[targetDate]||{meals:{},snacks:[],workout:null};
       const newFrom={...todayData.meals};delete newFrom[slotId];
       await saveDay(USER_ID,today,{...todayData,meals:newFrom});
       await saveDay(USER_ID,targetDate,{...toDay,meals:{...toDay.meals,[slotId]:meal}});
       const[,d]=await Promise.all([loadPerfil(USER_ID),loadAllDays(USER_ID)]);setDays(d);
-    } else{await updateToday({meals:{...todayData.meals,[slotId]:meal}});}
+    }else{await updateToday({meals:{...todayData.meals,[slotId]:meal}});}
   };
 
   useEffect(()=>{if(streak>=3)unlockBadge("streak_3");if(streak>=7){unlockBadge("streak_7");unlockBadge("week_complete");}},[streak,unlockBadge]);
-  const triggerConfetti=()=>{setConfetti(true);setTimeout(()=>setConfetti(false),2000);};
 
   const handleMealSubmit=async(slotId,label)=>{
     const desc=mealInputs[slotId];if(!desc?.trim())return;
@@ -792,12 +779,11 @@ export default function App() {
     try{
       const userGoals=getGoalsText(profile?.goals||[]);
       const restrictions=profile?.restrictions?`Restricciones: ${profile.restrictions}.`:"";
-      const result=await callAI(`Analiza esta comida: "${desc}". El usuario quiere: ${userGoals}. ${restrictions} Sé honesto. El score refleja alineación con el objetivo. SOLO JSON: score (1-10), protein_g, skin_impact ("beneficioso"|"neutro"|"inflamatorio"), goal_alignment ("excelente"|"bueno"|"moderado"|"perjudicial"), nutrients ([{name,benefit,negative:bool}] máx 4), tip.`,"Eres un nutricionista honesto. Responde SOLO con JSON válido.");
-      const meal={desc,...result,slot:slotId,label,timestamp:Date.now()};
+      const result=await callAI(`Analiza esta comida: "${desc}". El usuario quiere: ${userGoals}. ${restrictions} Sé honesto. SOLO JSON: score (1-10), protein_g, skin_impact ("beneficioso"|"neutro"|"inflamatorio"), goal_alignment ("excelente"|"bueno"|"moderado"|"perjudicial"), nutrients ([{name,benefit,negative:bool}] máx 4), tip.`,"Eres un nutricionista honesto. Responde SOLO con JSON válido.");
+      const meal={desc,...result,slot:slotId,label,editCount:0,timestamp:Date.now()};
       const newMeals={...todayData.meals,[slotId]:meal};
       await updateToday({meals:newMeals});
-      setXp(x=>x+50+(result.score||0)*5);triggerConfetti();
-      if(Object.keys(newMeals).length===1&&Object.keys(days).length<=1)unlockBadge("first_meal");
+      unlockBadge("first_meal");
       const dayProt=Object.values(newMeals).reduce((a,m)=>a+(m.protein_g||0),0)+(todayData.snacks||[]).reduce((a,s)=>a+(s.protein_g||0),0);
       if(profile&&dayProt>=profile.weight*2)unlockBadge("protein_goal");
       const scores=Object.values(newMeals).map(m=>m.score||0);
@@ -814,27 +800,28 @@ export default function App() {
       const userGoals=getGoalsText(profile?.goals||[]);
       const restrictions=profile?.restrictions?`Restricciones: ${profile.restrictions}.`:"";
       const result=await callAI(`Analiza este tentempié "${snackName}": "${desc}". El usuario quiere: ${userGoals}. ${restrictions} Sé honesto. SOLO JSON: score (1-10), protein_g, skin_impact ("beneficioso"|"neutro"|"inflamatorio"), goal_alignment ("excelente"|"bueno"|"moderado"|"perjudicial"), nutrients ([{name,benefit,negative:bool}] máx 4), tip.`,"Eres un nutricionista honesto. Responde SOLO con JSON válido.");
-      await updateToday({snacks:[...(todayData.snacks||[]),{desc,name:snackName,...result,timestamp:Date.now()}]});
-      setXp(x=>x+40+(result.score||0)*3);triggerConfetti();unlockBadge("first_meal");
+      await updateToday({snacks:[...(todayData.snacks||[]),{desc,name:snackName,...result,editCount:0,timestamp:Date.now()}]});
+      unlockBadge("first_meal");
       setMealInputs(i=>({...i,snack_new:""}));setSnackName("");
     }catch{alert("Error al analizar el tentempié.");}
     setMealLoading(l=>({...l,snack_new:false}));
   };
 
   const handleWorkoutSubmit=async()=>{
-  setWorkoutLoading(true);
-  const mealsDesc=[...Object.values(todayData.meals||{}).map(m=>m.desc),...(todayData.snacks||[]).map(s=>s.desc)].join("; ");
-  try{
-    const result=await callAI(
-      `Entreno: ${workoutForm.type}, ${workoutForm.duration}min, intensidad ${workoutForm.intensity}/5. Comidas hoy: "${mealsDesc}". SOLO JSON: coherence_score (1-10), impact (string breve).`,
-      "Eres un nutricionista. Responde SOLO con JSON válido."
-    );
-    await updateToday({workout:{...workoutForm,...result,timestamp:Date.now()}});
-  }catch{
-    await updateToday({workout:{...workoutForm,timestamp:Date.now()}});
-  }
-  setWorkoutLoading(false);
-};
+    setWorkoutLoading(true);
+    const mealsDesc=[...Object.values(todayData.meals||{}).map(m=>m.desc),...(todayData.snacks||[]).map(s=>s.desc)].join("; ");
+    try{
+      const result=await callAI(
+        `Entreno: ${workoutForm.type}, ${workoutForm.duration}min, intensidad ${workoutForm.intensity}/5. Comidas hoy: "${mealsDesc}". SOLO JSON: coherence_score (1-10), impact (string breve).`,
+        "Eres un nutricionista. Responde SOLO con JSON válido."
+      );
+      await updateToday({workout:{...workoutForm,...result,timestamp:Date.now()}});
+      unlockBadge("first_workout");
+      const weekW=Object.entries(days).filter(([d,v])=>{const diff=(new Date(today)-new Date(d))/86400000;return diff>=0&&diff<7&&v?.workout;}).length+1;
+      if(weekW>=3)unlockBadge("athlete");
+    }catch{await updateToday({workout:{...workoutForm,timestamp:Date.now()}});}
+    setWorkoutLoading(false);
+  };
 
   const fetchWeekSummary=async()=>{
     setWeekSummaryLoading(true);
@@ -857,13 +844,10 @@ export default function App() {
   const protColor=getProgressColor(protPct,"protein",profile?.goals||[]);
   const calColor=getProgressColor(calPct,"calories",profile?.goals||[]);
   const TABS=[{id:"today",label:"Hoy"},{id:"progress",label:"Progreso"},{id:"plan",label:"Plan"}];
-
-  // Ancho responsive: mobile max 640, tablet max 768, desktop max 960
   const maxW=isDesktop?960:640;
 
-  return (
+  return(
     <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",minHeight:"100vh",background:`linear-gradient(135deg,${G.bg1} 0%,${G.bg2} 50%,${G.bg3} 100%)`,color:G.text}}>
-      <Confetti active={confetti}/>
       <Toast toasts={toasts}/>
       {showDayClose&&<DayCloseModal todayData={todayData} profile={profile} onClose={()=>setShowDayClose(false)} onSave={updateToday} D={D}/>}
 
@@ -875,9 +859,8 @@ export default function App() {
         </div>
 
         <ProfilePanel profile={profile} onUpdate={setProfile} userId={USER_ID} D={D}/>
-        <XPBar xp={xp} streak={streak}/>
+        <DailyTip profile={profile} D={D}/>
 
-        {/* Progress bars */}
         <div style={{...glassCard,padding:"14px 20px",marginBottom:16}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
             <span style={{color:G.hint,letterSpacing:"0.04em",fontSize:D.xs}}>PROTEÍNA HOY</span>
@@ -910,9 +893,7 @@ export default function App() {
         </div>
 
         {tab==="today"&&<div>
-
           <SectionDivider label="COMIDAS"/>
-
           <div style={{...glassCard,overflow:"hidden",marginBottom:16}}>
             {FIXED_SLOTS.map((slot,i)=>(
               <div key={slot.id}>
@@ -940,7 +921,6 @@ export default function App() {
           </div>
 
           <SectionDivider label="ENTRENAMIENTO"/>
-
           <div style={{...glassCard,padding:22,marginBottom:16}}>
             <p style={{margin:"0 0 18px",fontSize:D.lg,fontWeight:500,color:G.text}}>🏋️ Entrenamiento de hoy</p>
             {todayData.workout?<WorkoutCard workout={todayData.workout} D={D}/>:(
@@ -956,8 +936,9 @@ export default function App() {
                 <Btn loading={workoutLoading} onClick={handleWorkoutSubmit} full>Registrar entrenamiento</Btn>
               </div>
             )}
-          <SectionDivider label="FIN DEL DÍA"/>
+          </div>
 
+          <SectionDivider label="FIN DEL DÍA"/>
           <div style={{...glassCard,padding:"18px 20px",marginBottom:16,textAlign:"center"}}>
             {todayData.dayClosed?(
               <div>
@@ -970,13 +951,11 @@ export default function App() {
                 <Btn onClick={()=>setShowDayClose(true)} full>Cerrar el día</Btn>
               </div>
             )}
-          
+          </div>
         </div>}
 
         {tab==="progress"&&<ProgressTab days={days} fetchWeekSummary={fetchWeekSummary} weekSummaryLoading={weekSummaryLoading} weekSummary={weekSummary} showRanking={showRanking} setShowRanking={setShowRanking} badges={badges} workoutGoal={workoutGoal} setWorkoutGoal={setWorkoutGoal} D={D}/>}
-
         {tab==="plan"&&<PlanTab todayData={todayData} profile={profile} plan={dayPlan} setPlan={setDayPlan} D={D}/>}
-
       </div>
     </div>
   );
