@@ -947,14 +947,6 @@ export default function App() {
               <div>
                 <label style={lbl}>Tipo</label>
                 <select value={workoutForm.type} onChange={e=>setWorkoutForm(f=>({...f,type:e.target.value}))} style={inp}>{WORKOUT_TYPES.map(t=><option key={t}>{t}</option>)}</select>
-                <div style={{marginTop:12,marginBottom:4}}><Slider min={15} max={180} step={5} value={workoutForm.duration} onChange={v=>setWorkoutForm(f=>({...f,duration:v}))} label="Duración"/></div>
-                <div style={{marginTop:12,marginBottom:12}}><Slider min={1} max={5} step={1} value={workoutForm.intensity} onChange={v=>setWorkoutForm(f=>({...f,intensity:v}))} label="Intensidad"/></div>
-                <label style={lbl}>Notas</label>
-                <div>
-                <label style={lbl}>Tipo</label>
-                <select value={workoutForm.type} onChange={e=>setWorkoutForm(f=>({...f,type:e.target.value}))} style={inp}>
-                  {WORKOUT_TYPES.map(t=><option key={t}>{t}</option>)}
-                </select>
                 <div style={{marginTop:12,marginBottom:4}}>
                   <Slider min={15} max={180} step={5} value={workoutForm.duration} onChange={v=>setWorkoutForm(f=>({...f,duration:v}))} label="Duración"/>
                 </div>
@@ -963,11 +955,7 @@ export default function App() {
                 </div>
                 <Btn loading={workoutLoading} onClick={handleWorkoutSubmit} full>Registrar entrenamiento</Btn>
               </div>
-              <Btn loading={workoutLoading} onClick={handleWorkoutSubmit} full>Analizar con IA</Btn>
-              </div>
             )}
-          </div>
-
           <SectionDivider label="FIN DEL DÍA"/>
 
           <div style={{...glassCard,padding:"18px 20px",marginBottom:16,textAlign:"center"}}>
