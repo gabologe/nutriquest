@@ -327,8 +327,14 @@ function MealSlot({slot,meal,input,onInput,loading,onSubmit,onDelete,onSave,D}) 
   );
 }
 
-function WorkoutCard({workout,compact,D}) {
-  return <div><div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:compact?0:10}}><Tag>{workout.type}</Tag><Tag>{workout.duration} min</Tag><Tag>{"●".repeat(workout.intensity)} int.</Tag></div>{!compact&&workout.coherence_score&&<div style={{marginTop:12}}><div style={{fontSize:D.md,marginBottom:8}}><span style={{color:G.hint,fontSize:D.sm}}>Coherencia — </span><span style={{fontWeight:600,color:G.sage}}>{workout.coherence_score}/10</span></div><p style={{fontSize:D.md,color:G.muted,margin:"0 0 8px",lineHeight:1.6}}>{workout.balance}</p>{(workout.strengths||[]).map((s,i)=><div key={i} style={{fontSize:D.md,color:G.sage,marginBottom:4}}>✓ {s}</div>)}{(workout.suggestions||[]).map((s,i)=><div key={i} style={{fontSize:D.md,color:G.gold,marginBottom:4}}>→ {s}</div>)}</div>}</div>;
+function WorkoutCard({workout,D}) {
+  return (
+    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+      <Tag>{workout.type}</Tag>
+      <Tag>{workout.duration} min</Tag>
+      <Tag>{"●".repeat(workout.intensity)} int.</Tag>
+    </div>
+  );
 }
 
 function WeekRanking({days,D}) {
@@ -816,17 +822,19 @@ export default function App() {
   };
 
   const handleWorkoutSubmit=async()=>{
-    setWorkoutLoading(true);
-    const mealsDesc=[...Object.values(todayData.meals||{}).map(m=>m.desc),...(todayData.snacks||[]).map(s=>s.desc)].join("; ");
-    try{
-      const result=await callAI(`Entreno: ${workoutForm.type}, ${workoutForm.duration}min, intensidad ${workoutForm.intensity}/5. Comidas hoy: "${mealsDesc}". SOLO JSON: coherence_score (1-10), balance (string honesto), protein_ok (bool), strengths ([string]), suggestions ([string]).`,"Eres un entrenador y nutricionista honesto. Responde SOLO con JSON válido.");
-      await updateToday({workout:{...workoutForm,...result,timestamp:Date.now()}});
-      setXp(x=>x+80);unlockBadge("first_workout");
-      const weekW=Object.entries(days).filter(([d,v])=>{const diff=(new Date(today)-new Date(d))/86400000;return diff>=0&&diff<7&&v?.workout;}).length+1;
-      if(weekW>=3)unlockBadge("athlete");
-    }catch{alert("Error al analizar el entrenamiento.");}
-    setWorkoutLoading(false);
-  };
+  setWorkoutLoading(true);
+  const mealsDesc=[...Object.values(todayData.meals||{}).map(m=>m.desc),...(todayData.snacks||[]).map(s=>s.desc)].join("; ");
+  try{
+    const result=await callAI(
+      `Entreno: ${workoutForm.type}, ${workoutForm.duration}min, intensidad ${workoutForm.intensity}/5. Comidas hoy: "${mealsDesc}". SOLO JSON: coherence_score (1-10), impact (string breve).`,
+      "Eres un nutricionista. Responde SOLO con JSON válido."
+    );
+    await updateToday({workout:{...workoutForm,...result,timestamp:Date.now()}});
+  }catch{
+    await updateToday({workout:{...workoutForm,timestamp:Date.now()}});
+  }
+  setWorkoutLoading(false);
+};
 
   const fetchWeekSummary=async()=>{
     setWeekSummaryLoading(true);
@@ -942,8 +950,20 @@ export default function App() {
                 <div style={{marginTop:12,marginBottom:4}}><Slider min={15} max={180} step={5} value={workoutForm.duration} onChange={v=>setWorkoutForm(f=>({...f,duration:v}))} label="Duración"/></div>
                 <div style={{marginTop:12,marginBottom:12}}><Slider min={1} max={5} step={1} value={workoutForm.intensity} onChange={v=>setWorkoutForm(f=>({...f,intensity:v}))} label="Intensidad"/></div>
                 <label style={lbl}>Notas</label>
-                <textarea value={workoutForm.notes} onChange={e=>setWorkoutForm(f=>({...f,notes:e.target.value}))} placeholder="Opcional…" rows={3} style={{...inp,resize:"vertical"}}/>
-                <Btn loading={workoutLoading} onClick={handleWorkoutSubmit} full>Analizar con IA</Btn>
+                <div>
+                <label style={lbl}>Tipo</label>
+                <select value={workoutForm.type} onChange={e=>setWorkoutForm(f=>({...f,type:e.target.value}))} style={inp}>
+                  {WORKOUT_TYPES.map(t=><option key={t}>{t}</option>)}
+                </select>
+                <div style={{marginTop:12,marginBottom:4}}>
+                  <Slider min={15} max={180} step={5} value={workoutForm.duration} onChange={v=>setWorkoutForm(f=>({...f,duration:v}))} label="Duración"/>
+                </div>
+                <div style={{marginTop:12,marginBottom:16}}>
+                  <Slider min={1} max={5} step={1} value={workoutForm.intensity} onChange={v=>setWorkoutForm(f=>({...f,intensity:v}))} label="Intensidad"/>
+                </div>
+                <Btn loading={workoutLoading} onClick={handleWorkoutSubmit} full>Registrar entrenamiento</Btn>
+              </div>
+              <Btn loading={workoutLoading} onClick={handleWorkoutSubmit} full>Analizar con IA</Btn>
               </div>
             )}
           </div>
