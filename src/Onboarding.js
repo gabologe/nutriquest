@@ -37,10 +37,10 @@ const RESTRICCIONES_SUGERIDAS = [
   { id: "diabetico", emoji: "🩺", label: "Diabético" },
 ];
 
-const MESES_LABELS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const MESES_LABELS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const DAYS = Array.from({length:31},(_,i)=>String(i+1).padStart(2,"0"));
 const YEARS = Array.from({length:90},(_,i)=>String(2008-i));
-const ITEM_H = 48;
+const ITEM_H = 52;
 
 function calcEdad(fechaNac) {
   if (!fechaNac) return null;
@@ -60,61 +60,93 @@ function calcTDEE(peso, altura, fechaNac, sexo, factorActividad) {
   return Math.round(bmr * factorActividad);
 }
 
-// ── Scrolling Wheel Column (mobile) ───────────────────────────────────────
-function WheelCol({ items, initIdx, onSelect, labelFn, wide }) {
+// ── Scrolling Wheel Column ─────────────────────────────────────────────────
+function WheelCol({ items, initIdx, onSelect }) {
   const ref = useRef(null);
-  const selIdxRef = useRef(initIdx);
+  const [selIdx, setSelIdx] = useState(initIdx >= 0 ? initIdx : 0);
+  const ticking = useRef(false);
 
   useEffect(() => {
     if (ref.current) {
-      ref.current.scrollTop = initIdx * ITEM_H;
-      selIdxRef.current = initIdx;
+      ref.current.scrollTop = (initIdx >= 0 ? initIdx : 0) * ITEM_H;
     }
   }, []);
 
   const handleScroll = () => {
-    if (!ref.current) return;
-    const idx = Math.round(ref.current.scrollTop / ITEM_H);
-    if (idx !== selIdxRef.current) {
-      selIdxRef.current = idx;
-      onSelect(idx);
-    }
+    if (!ref.current || ticking.current) return;
+    ticking.current = true;
+    requestAnimationFrame(() => {
+      if (ref.current) {
+        const idx = Math.round(ref.current.scrollTop / ITEM_H);
+        const clamped = Math.max(0, Math.min(idx, items.length - 1));
+        setSelIdx(clamped);
+        onSelect(clamped);
+      }
+      ticking.current = false;
+    });
   };
 
   return (
-    <div style={{ flex: wide ? 1.6 : 1, overflow: "hidden", position: "relative", borderRadius: 10 }}>
+    <div style={{ flex: 1, position: "relative", height: ITEM_H * 5, overflow: "hidden" }}>
+      {/* selection highlight */}
+      <div style={{
+        position: "absolute", top: ITEM_H * 2, left: 4, right: 4, height: ITEM_H,
+        background: G.sageLight, borderRadius: 10,
+        border: `1px solid ${G.sageBorder}`, pointerEvents: "none", zIndex: 1,
+      }} />
       {/* fade top */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: ITEM_H * 1.5, background: `linear-gradient(to bottom, rgba(200,216,196,0.9), transparent)`, pointerEvents: "none", zIndex: 2 }} />
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: ITEM_H * 2,
+        background: "linear-gradient(to bottom, rgba(232,224,208,0.95) 0%, rgba(232,224,208,0) 100%)",
+        pointerEvents: "none", zIndex: 2,
+      }} />
       {/* fade bottom */}
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: ITEM_H * 1.5, background: `linear-gradient(to top, rgba(200,216,196,0.9), transparent)`, pointerEvents: "none", zIndex: 2 }} />
-      {/* selection indicator */}
-      <div style={{ position: "absolute", top: ITEM_H * 1.5, left: 0, right: 0, height: ITEM_H, borderTop: `1.5px solid ${G.sage}`, borderBottom: `1.5px solid ${G.sage}`, pointerEvents: "none", zIndex: 1, opacity: 0.4 }} />
+      <div style={{
+        position: "absolute", bottom: 0, left: 0, right: 0, height: ITEM_H * 2,
+        background: "linear-gradient(to top, rgba(232,224,208,0.95) 0%, rgba(232,224,208,0) 100%)",
+        pointerEvents: "none", zIndex: 2,
+      }} />
       {/* scrollable list */}
       <div
         ref={ref}
         onScroll={handleScroll}
-        style={{ overflowY: "scroll", height: ITEM_H * 4, scrollSnapType: "y mandatory", padding: `${ITEM_H * 1.5}px 0`, WebkitOverflowScrolling: "touch" }}
+        style={{
+          height: "100%",
+          overflowY: "scroll",
+          scrollSnapType: "y mandatory",
+          WebkitOverflowScrolling: "touch",
+          paddingTop: ITEM_H * 2,
+          paddingBottom: ITEM_H * 2,
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        }}
       >
-        <style>{`div::-webkit-scrollbar { display: none; }`}</style>
-        {items.map((item, i) => (
-          <div
-            key={i}
-            style={{
-              height: ITEM_H,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              scrollSnapAlign: "center",
-              fontSize: 15,
-              fontWeight: 400,
-              color: G.muted,
-              userSelect: "none",
-              fontFamily: "inherit",
-            }}
-          >
-            {labelFn ? labelFn(item, i) : item}
-          </div>
-        ))}
+        <style>{`div::-webkit-scrollbar{display:none}`}</style>
+        {items.map((item, i) => {
+          const dist = Math.abs(i - selIdx);
+          const isSelected = i === selIdx;
+          return (
+            <div
+              key={i}
+              style={{
+                height: ITEM_H,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                scrollSnapAlign: "start",
+                fontSize: isSelected ? 18 : dist === 1 ? 15 : 13,
+                fontWeight: isSelected ? 600 : 400,
+                color: isSelected ? G.sage : dist === 1 ? G.muted : G.hint,
+                opacity: dist > 2 ? 0.3 : dist === 2 ? 0.55 : 1,
+                transition: "all 0.15s ease",
+                userSelect: "none",
+                fontFamily: "inherit",
+              }}
+            >
+              {item}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -137,8 +169,7 @@ function MaskedDateInput({ value, onChange }) {
   };
 
   const handleChange = (e) => {
-    const raw = e.target.value;
-    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
     let masked = digits;
     if (digits.length > 4) masked = digits.slice(0,2) + "/" + digits.slice(2,4) + "/" + digits.slice(4);
     else if (digits.length > 2) masked = digits.slice(0,2) + "/" + digits.slice(2);
@@ -151,19 +182,13 @@ function MaskedDateInput({ value, onChange }) {
   };
 
   return (
-    <div style={{ position: "relative" }}>
-      <div style={{ fontFamily: "inherit", fontSize: 15, padding: "11px 14px", position: "absolute", top: 0, left: 0, pointerEvents: "none", color: "transparent", letterSpacing: "0.05em", whiteSpace: "pre" }}>
-        {value}
-        <span style={{ color: G.hint }}>{value ? "DD/MM/AAAA".slice(value.length) : ""}</span>
-      </div>
-      <input
-        value={value}
-        onChange={handleChange}
-        placeholder="DD/MM/AAAA"
-        maxLength={10}
-        style={inp}
-      />
-    </div>
+    <input
+      value={value}
+      onChange={handleChange}
+      placeholder="DD/MM/AAAA"
+      maxLength={10}
+      style={inp}
+    />
   );
 }
 
@@ -172,8 +197,11 @@ function FechaPicker({ form, setForm }) {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   const buildFecha = (d, m, y) => {
-    const fechaNac = d && m && y && y.length === 4 ? `${y}-${m.padStart(2,"0")}-${d.padStart(2,"0")}` : "";
-    return { diaNac: d, mesNac: m, anioNac: y, fechaNac };
+    const yStr = String(y || "");
+    const mStr = String(m || "").padStart(2, "0");
+    const dStr = String(d || "").padStart(2, "0");
+    const fechaNac = dStr && mStr && yStr.length === 4 ? `${yStr}-${mStr}-${dStr}` : "";
+    return { diaNac: dStr, mesNac: mStr, anioNac: yStr, fechaNac };
   };
 
   if (!isMobile) {
@@ -192,13 +220,18 @@ function FechaPicker({ form, setForm }) {
   const initYear = form.anioNac ? YEARS.indexOf(form.anioNac) : 18;
 
   return (
-    <div>
-      <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
-        <div style={{ flex: 1, textAlign: "center", fontSize: 11, color: G.hint }}>Día</div>
-        <div style={{ flex: 1, textAlign: "center", fontSize: 11, color: G.hint }}>Mes</div>
-        <div style={{ flex: 1.6, textAlign: "center", fontSize: 11, color: G.hint }}>Año</div>
+    <div style={{
+      background: "rgba(232,224,208,0.6)",
+      borderRadius: 14,
+      padding: "0 8px",
+      border: `1px solid rgba(255,255,255,0.5)`,
+    }}>
+      <div style={{ display: "flex", gap: 0 }}>
+        <div style={{ flex: 1, textAlign: "center", fontSize: 11, color: G.hint, paddingTop: 8 }}>Día</div>
+        <div style={{ flex: 1.4, textAlign: "center", fontSize: 11, color: G.hint, paddingTop: 8 }}>Mes</div>
+        <div style={{ flex: 1.2, textAlign: "center", fontSize: 11, color: G.hint, paddingTop: 8 }}>Año</div>
       </div>
-      <div style={{ display: "flex", gap: 6, background: "rgba(255,255,255,0.3)", borderRadius: 12, padding: 6 }}>
+      <div style={{ display: "flex", gap: 4 }}>
         <WheelCol
           items={DAYS}
           initIdx={initDay < 0 ? 14 : initDay}
@@ -213,7 +246,6 @@ function FechaPicker({ form, setForm }) {
           items={YEARS}
           initIdx={initYear < 0 ? 18 : initYear}
           onSelect={idx => setForm(f => ({ ...f, ...buildFecha(f.diaNac || "01", f.mesNac || "01", YEARS[idx]) }))}
-          wide
         />
       </div>
     </div>
@@ -328,7 +360,7 @@ function StepDatos({ form, setForm, onNext, onBack }) {
 
       <label style={lbl}>Fecha de nacimiento</label>
       <FechaPicker form={form} setForm={setForm} />
-      {edad && <p style={{ margin: "6px 0 0", fontSize: 12, color: G.hint }}>{edad} años</p>}
+      {edad && <p style={{ margin: "8px 0 0", fontSize: 13, color: G.sage, fontWeight: 500 }}>{edad} años</p>}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 4 }}>
         <div>
