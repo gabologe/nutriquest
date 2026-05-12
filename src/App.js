@@ -736,7 +736,7 @@ export default function App() {
 
   useEffect(()=>{
     if(sessionLoading)return;
-    (async()=>{setLoading(true);const[p,d]=await Promise.all([loadPerfil(USER_ID),loadAllDays(USER_ID)]);setProfile(p);setDays(d);setLoading(false);})();
+    (async()=>{setLoading(true);const[p,d]=await Promise.all([loadPerfil(USER_ID),loadAllDays(USER_ID)]);console.log("PERFIL:",p,"USER_ID:",USER_ID);setProfile(p);setDays(d);setLoading(false);})();
   },[USER_ID,sessionLoading]);
 
   useEffect(()=>{lsSave("nq_xp",xp);},[xp]);
